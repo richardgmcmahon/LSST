@@ -104,7 +104,7 @@ field_filters = ['u', 'g', 'r', 'i', 'z', 'y']
 bands = field_filters
 
 
-def connect_rsp_tap():
+def connect_rsp_tap(verbose=True):
     """
     https://dp0-2.lsst.io/data-access-analysis-tools/api-intro.html#use-of-pyvo-with-the-rsp-tap-service
 
@@ -125,6 +125,9 @@ def connect_rsp_tap():
     cred.set_password("x-oauth-basic", token_str)
     credential = cred.get("ivo://ivoa.net/sso#BasicAA")
     rsp_tap = pyvo.dal.TAPService(RSP_TAP_SERVICE, session=credential)
+
+    if verbose:
+        help(rsp_tap)
 
     return rsp_tap
 
@@ -153,7 +156,14 @@ def run_async_query(service=None, query=None):
     assert job.phase == 'COMPLETED'
 
     logger.info('Fetch results table')
-    results = job.fetch_result().to_table()
+
+    #help(job.fetch_result())
+
+    results = job.fetch_result()
+
+    #help(results)
+
+    results  = results.to_table()
     print(f"Total number of rows: {len(results)}")
 
     logger.info('')
@@ -1168,7 +1178,8 @@ def select_highredshift_quasars(mode='sync',
     query_lines.append(f"       coord_ra, coord_raErr, ")
     query_lines.append(f"       coord_dec, coord_decErr, ")
     query_lines.append(f"       tract, patch, ")
-    query_lines.append(f"       refBand, refExtendedness, ")
+    query_lines.append(f"       refBand, ")
+    query_lines.append(f"       refExtendedness, ")
     query_lines.append(f"       refSizeExtendedness, ")
     query_lines.append(f"       shape_flag, ")
 
@@ -1176,31 +1187,39 @@ def select_highredshift_quasars(mode='sync',
     # the SELECT series
     # also maybe a blank space at the end of each line
     for filt in field_filters:
-        query_lines.append(f"       {filt}_ra, {filt}_raErr, ")
-        query_lines.append(f"       {filt}_dec, {filt}_decErr, ")
+        if not thintable:
+            query_lines.append(f"       {filt}_ra, {filt}_raErr, ")
+            query_lines.append(f"       {filt}_dec, {filt}_decErr, ")
+
         query_lines.append(f"       {filt}_i_flag, ")
         query_lines.append(f"       {filt}_extendedness, ")
         query_lines.append(f"       {filt}_extendedness_flag, ")
-        if not thintable:
-            query_lines.append(f"       {filt}_sizeExtendedness, ")
-            query_lines.append(f"       {filt}_sizeExtendedness_flag, ")
 
-        query_lines.append(f"       {filt}_psfFlux, ")
-        query_lines.append(f"       {filt}_psfFluxErr, ")
-        query_lines.append(f"       {filt}_psfFlux_flag, ")
-        query_lines.append(f"       {filt}_free_psfFlux, ")
-        query_lines.append(f"       {filt}_free_psfFluxErr, ")
-        query_lines.append(f"       {filt}_free_psfFlux_flag, ")
+
+        query_lines.append(f"       {filt}_sizeExtendedness, ")
+        query_lines.append(f"       {filt}_sizeExtendedness_flag, ")
+
+        if not thintable:
+            query_lines.append(f"       {filt}_psfFlux, ")
+            query_lines.append(f"       {filt}_psfFluxErr, ")
+            query_lines.append(f"       {filt}_psfFlux_flag, ")
+            query_lines.append(f"       {filt}_free_psfFlux, ")
+            query_lines.append(f"       {filt}_free_psfFluxErr, ")
+            query_lines.append(f"       {filt}_free_psfFlux_flag, ")
+
         query_lines.append(f"       {filt}_psfMag, ")
         query_lines.append(f"       {filt}_psfMagErr, ")
 
         if not thintable:
-            query_lines.append(f"       {filt}_cModelFlux, ")
-            query_lines.append(f"       {filt}_cModelFlux_inner, ")
-            query_lines.append(f"       {filt}_cModelFluxErr, ")
-            query_lines.append(f"       {filt}_cModelMag, ")
-            query_lines.append(f"       {filt}_cModelMagErr, ")
-            query_lines.append(f"       {filt}_cModel_flag, ")
+           query_lines.append(f"       {filt}_cModelFlux, ")
+           query_lines.append(f"       {filt}_cModelFlux_inner, ")
+           query_lines.append(f"       {filt}_cModelFluxErr, ")
+
+        query_lines.append(f"       {filt}_cModelMag, ")
+        query_lines.append(f"       {filt}_cModelMagErr, ")
+        query_lines.append(f"       {filt}_cModel_flag, ")
+
+        if not thintable:
             query_lines.append(f"       {filt}_free_cModelFlux, ")
             query_lines.append(f"       {filt}_free_cModelFlux_inner, ")
             query_lines.append(f"       {filt}_free_cModelFluxErr, ")
@@ -1209,7 +1228,8 @@ def select_highredshift_quasars(mode='sync',
         query_lines.append(f"       {filt}_blendedness, ")
         query_lines.append(f"       {filt}_blendedness_flag, ")
 
-    query_lines.append(f"       deblend_failed, deblend_masked, ")
+    query_lines.append(f"       deblend_failed, ")
+    query_lines.append(f"       deblend_masked, ")
     query_lines.append(f"       deblend_skipped ")
     query_lines.append("FROM dp1.Object ")
 
@@ -1243,6 +1263,18 @@ def select_highredshift_quasars(mode='sync',
     print()
     result.info(['attributes'])
     # result.info(['attributes', 'stats'])
+
+
+    if thintable:
+        outfile = 'DP1_' + fieldname + '_ObjectThin_tmp.fits'
+
+        print(f'Saving: {outfile}')
+        print('Elapsed time(secs): ',time.time() - t0)
+        result.write(outfile, overwrite=True)
+        print('Elapsed time(secs): ',time.time() - t0)
+
+        return
+
 
     # add some columns
     # refBand_S_N
@@ -1423,7 +1455,6 @@ def select_highredshift_quasars(mode='sync',
     plt.legend()
     plt.show()
 
-
     return
 
 
@@ -1491,7 +1522,7 @@ if __name__ == "__main__":
 
     ntop = None
     # ntop = 100000
-    # fieldname = 'All'
+    fieldname = 'All'
 
     logger.info(f'Fieldname: {fieldname}')
     radius = 1.0

@@ -1245,10 +1245,10 @@ def stats_column(table=None, colname=None):
     print(f'is_masked: {is_masked}')
 
     if is_masked:
-        masked_data = data[data.mask]
-        unmasked_data = data[~data.mask]
+        data_masked = data[data.mask]
+        data_unmasked = data[~data.mask]
         print('Number of rows; all, unmasked, masked: ' +
-          f'{len(data)} {len(unmasked_data)} {len(data_masked)}')
+          f'{len(data)} {len(data_unmasked)} {len(data_masked)}')
 
     print(type(data))
     print(f'data[0, -1]: {data[0]} {data[-1]}')
@@ -1333,9 +1333,9 @@ def  plot_hist_psfFlux_S_N(table=None,
     ndata_S_N_gte_5 = np.count_nonzero(xdata >= 5.0)
     ndata_S_N_lt_0 = np.count_nonzero(xdata < 0.0)
     label = ('ref ' + str(len(xdata)) +
-             '/' + str(ndata_finite) +
-             '/' + str(ndata_S_N_gte_5) +
-             '/' + str(ndata_S_N_lt_0))
+             ' ;' + str(ndata_finite) +
+             ' ;' + str(ndata_S_N_gte_5) +
+             ' ;' + str(ndata_S_N_lt_0))
     xrange = (-5.0, 25.0)
     n, bins, patches = plt.hist(xdata, bins=30,
                                 histtype='step',
@@ -1355,9 +1355,9 @@ def  plot_hist_psfFlux_S_N(table=None,
         xrange = (-5.0, 25.0)
 
         label = (band + '   ' + str(len(xdata)) +
-                 '/' + str(ndata_finite) +
-                 '/' + str(ndata_S_N_gte_5) +
-                 '/' + str(ndata_S_N_lt_0))
+                 ' ;' + str(ndata_finite) +
+                 ' ;' + str(ndata_S_N_gte_5) +
+                 ' ;' + str(ndata_S_N_lt_0))
         n, bins, patches = plt.hist(xdata, bins=30,
                                     histtype='step',
                                     linewidth=linewidth,
@@ -1371,11 +1371,11 @@ def  plot_hist_psfFlux_S_N(table=None,
     plt.grid()
     plt.legend()
 
-    plt.title(f'{fieldname}  \n All \\ not NaN or Masked\\ SN>=5\\ SN<0')
+    plt.title(f'{fieldname}  \n All ;not NaN or Masked ;SN>=5 ;SN<0')
     plt.xlabel(fluxtype + ' _S_N')
     plt.ylabel('Number per bin')
 
-    plotfile = 'DP1_' + fieldname + '_' + fluxtype + '_S_N' + '.png'
+    plotfile = 'DP1_' + fieldname + '_hist_' + fluxtype + '_S_N' + '.png'
     print('Saving:', plotfile)
     plt.savefig(plotfile)
 
