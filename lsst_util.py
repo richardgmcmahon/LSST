@@ -91,9 +91,11 @@ def count_refband(table=None):
     print(unique_counts)
     for index, row in enumerate(unique):
         print(index, row, unique_counts[index])
-
+    print(f'Total number of source: {len(table)}')
+    print()
 
     return
+
 
 def plot_redshift_mag(table=None,
                       magtype='psfMag',
