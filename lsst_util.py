@@ -1,3 +1,10 @@
+"""
+https://sdm-schemas.lsst.io/dp1.html
+
+
+"""
+
+
 import os
 import sys
 import time
@@ -84,11 +91,17 @@ def count_refband(table=None):
     """
 
     """
+    logger.info('')
+
+    nrows = len(table)
     unique, unique_counts = \
         np.unique(table['refBand'], return_counts=True)
+    total_counts = np.sum(unique_counts)
 
     print(unique)
     print(unique_counts)
+    print(f'refBand counts: {total_counts} {nrows}')
+
     for index, row in enumerate(unique):
         print(index, row, unique_counts[index])
     print(f'Total number of source: {len(table)}')
@@ -210,6 +223,181 @@ def table_flag_info(table=None,
     return
 
 
+def explore_refExtendedness(table=None, band='ref'):
+    """
+
+    Explore refExtendedness and refSizeExtendedness
+
+    https://sdm-schemas.lsst.io/dp1.html
+
+    refExtendedness
+    https://sdm-schemas.lsst.io/dp1.html#Object.refExtendedness
+
+    refSizeExtendedness
+    https://sdm-schemas.lsst.io/dp1.html#Object.refSizeExtendedness
+    Moments-based measure of whether an object is point-like (0) or extended (1). Reference band.
+
+    """
+
+    debug = True
+
+    plt.figsize=(12,6))
+
+    colname_list = ['refBand', 'refExtendedness', 'refSizeExtendedness']
+    table[colname_list].info(['attributes', 'stats'])
+    logger.info('\n')
+
+    table['refBand'].info(['attributes', 'stats'])
+    data = table['refBand']
+    has_mask = hasattr(data, 'mask')
+    n_masked = 0
+    if has_mask:
+        imasked = np.ma.is_masked(data)
+        n_masked = len(data[imasked])
+        print(f'n_masked {n_masked}')
+        n_masked = np.sum(data.mask)
+    print(f'n_masked {n_masked}')
+    logger.info('\n')
+
+    table['refExtendedness'].info(['attributes', 'stats'])
+    logger.info('\n')
+
+    table['refSizeExtendedness'].info(['attributes', 'stats'])
+    logger.info('\n')
+
+    fig, axes = plt.subplots(1, 2, figsize=(12,6))
+
+    colnames_subplots = ['refExtendedness', 'refSizeExtendedness']
+    for iplot, colname in enumerate(colnames_subplots):
+
+        table[colname].info(['attributes', 'stats'])
+
+        xdata = table[colname]
+        if hasattr(xdata, "mask"):
+            n_bad = np.count_nonzero(xdata.mask)
+        else:
+            try:
+                n_bad = np.count_nonzero(np.isinf(xdata) | np.isnan(xdata))
+            except Exception:
+                n_bad = 0
+        ndata = len(xdata)
+        ndata_bad = n_bad
+        ndata_good = ndata - ndata_bad
+
+        legend_title = 'All/ Good/ Masked'
+        print(f'ndata all, good, bad  = {ndata} {ndata_good} {ndata_bad}')
+        label = f'{ndata}/ {ndata_good}/ {ndata_bad}'
+        plot_title = table.meta['Filename']
+
+        axes[iplot].hist(xdata, bins=100, label=label)
+        axes[iplot].set_yscale('log')
+
+        axes[iplot].legend(title=legend_title, loc='upper center')
+        axes[iplot].set_xlabel(colname)
+        axes[iplot].set_ylabel('Number per bin')
+        axes[iplot].set_title(plot_title)
+
+    logger.info('\n')
+    plt.show()
+
+    fig, axes = plt.subplots(1, 2, figsize=(12,6))
+    print(f'bands {bands}')
+    if debug:
+        input('Enter any key to continue... ')
+
+    for band in bands:
+
+        fig, axes = plt.subplots(1, 2, figsize=(12,6))
+        colnames_subplots = [band + '_extendedness',
+                             band + '_sizeExtendedness']
+
+        for iplot, colname in enumerate(colnames_subplots):
+
+            table[colname].info(['attributes', 'stats'])
+
+            xdata = table[colname]
+            ndata = len(xdata)
+
+            if hasattr(xdata, "mask"):
+                n_bad = np.count_nonzero(xdata.mask)
+            else:
+                try:
+                    n_bad = np.count_nonzero(np.isinf(xdata) | np.isnan(xdata))
+                except Exception:
+                    n_bad = 0
+
+            ndata = len(xdata)
+            ndata_bad = n_bad
+            ndata_good = ndata - ndata_bad
+
+            legend_title = 'All/ Good/ Masked'
+            print(f'ndata all, good, bad  = {ndata} {ndata_good} {ndata_bad}')
+            label = f'{ndata}/ {ndata_good}/ {ndata_bad}'
+            plot_title = table.meta['Filename']
+
+            axes[iplot].hist(xdata, bins=100, label=label)
+            axes[iplot].set_yscale('log')
+
+            axes[iplot].legend(title=legend_title, loc='upper center')
+            axes[iplot].set_xlabel(colname)
+            axes[iplot].set_ylabel('Number per bin')
+            axes[iplot].set_title(plot_title)
+
+        logger.info('\n')
+
+        plt.show()
+
+    logger.info('\n')
+
+    colname_list = ['refBand', 'refExtendedness']
+    for colname in colname_list:
+        logging.info(f'{colname} {len(table)}')
+        unique, unique_counts = \
+            np.unique(table[colname], return_counts=True)
+
+        print(unique)
+        print(unique_counts)
+        for index, row in enumerate(unique):
+            print(index, row, unique_counts[index])
+        logger.info('\n')
+
+    logger.info('\n')
+
+
+
+    # see https://docs.astropy.org/en/latest/_modules/astropy/utils/data_info.html#DataInfo
+    data = table['refExtendedness']
+    if hasattr(data, "mask"):
+        n_bad = np.count_nonzero(data.mask)
+    else:
+        try:
+            n_bad = np.count_nonzero(np.isinf(data) | np.isnan(data))
+        except Exception:
+            n_bad = 0
+    ndata_bad = n_bad
+    print(f'ndata_bad = {ndata_bad}')
+
+    ndata_inf = np.count_nonzero(np.isinf(table['refExtendedness']))
+    print(f'ndata_inf = {ndata_inf}')
+    ndata_nan = np.count_nonzero(np.isnan(table['refExtendedness']))
+    print(f'ndata_nan = {ndata_nan}')
+
+    ndata_finite = np.count_nonzero(
+            ~np.isnan(table['refExtendedness']))
+
+    ndata = len(table)
+    ndata_notfinite = ndata - ndata_finite
+    print(f'Number of finite refExtendedness values : {ndata_finite}')
+    print(f'Number of not finite refExtendedness values : {ndata_notfinite}')
+    logger.info('\n')
+
+
+
+
+
+    return
+
+
 def plot_cmodel_psf(table=None,
                     band=None,
                     band_flaglist=None,
@@ -218,19 +406,24 @@ def plot_cmodel_psf(table=None,
                     xrange=None,
                     yrange=None,
                     multiplot=False,
+                    figsize=(6.0, 7.0),
                     plot_title=None,
                     plotfile_prefix='',
-                    savefig=True):
+                    savefig=True,
+                    debug=False):
     """
 
-    plot cmodel - psf
+    plot cmodelMag - psfMag
 
 
     """
+
+    debug = True
 
     # global logger
+    logging.info('Starting ')
 
-    logging.info('')
+    plt.figure(figsize=figsize)
 
     if plot_title is None:
         plot_title = table.meta['Filename']
@@ -243,28 +436,25 @@ def plot_cmodel_psf(table=None,
     magtype1 = 'psfMag'
     magtype2 = 'cModelMag'
 
+    explore_refExtendedness(table=table)
 
+    logger.info('\n')
 
-    table['refBand'].info(['attributes', 'stats'])
+    print('Next cycle through bands')
+    if debug:
+        input('Enter any key to continue... ')
 
-    unique, unique_counts = \
-            np.unique(table['refBand'], return_counts=True)
-    print('refBand', len(table))
-    print(unique)
-    print(unique_counts)
-    for index, row in enumerate(unique):
-        print(index, row, unique_counts[index])
-
-    ndata_finite = np.count_nonzero(
-            ~np.isnan(table['refExtendedness']))
-    table['refExtendedness'].info(['attributes', 'stats'])
-    print(f'Number of finite refExtendedness values : {ndata_finite}')
 
     table_save = table
     for band in bands[0:6]:
 
+        logger.info(f'band: {band}')
+
+        plt.figure(figsize=figsize)
+
         table = table_save
 
+        logger.info(f'band_flaglist: {band_flaglist}')
         if band_flaglist is not None:
             for band_flag in band_flaglist:
                 itest = (table[band + '_' + band_flag] == 0)
@@ -272,13 +462,35 @@ def plot_cmodel_psf(table=None,
 
         print()
         logging.info('')
-        plot_suptitle = band + '_extendedness'
+        legend_title = band + '_extendedness'
+
         ndata = len(table)
-        print(table[band + '_extendedness'])
+        # print(table[band + '_extendedness'])
+
+        colname_extendedness = band + '_extendedness'
+        table[colname_extendedness].info(['attributes', 'stats'])
+        logger.info('\n')
+
+        data = table[colname_extendedness]
+        if hasattr(data, "mask"):
+           n_bad = np.count_nonzero(data.mask)
+        else:
+            try:
+               n_bad = np.count_nonzero(np.isinf(data) | np.isnan(data))
+            except Exception:
+               n_bad = 0
+        ndata_bad = n_bad
+        print(f'ndata_bad = {ndata_bad}')
+
+        ndata_inf = np.count_nonzero(np.isinf(table[colname_extendedness]))
+        print(f'ndata_inf = {ndata_inf}')
+        ndata_nan = np.count_nonzero(np.isnan(table[colname_extendedness]))
+        print(f'ndata_nan = {ndata_nan}')
+
 
         ndata_finite = np.count_nonzero(
-            ~np.isnan(table[band + '_extendedness']))
-        table[band + '_extendedness'].info(['attributes', 'stats'])
+            ~np.isnan(table[colname_extendedness]))
+
         print(f'Number of finite {band} ExtendedNess values : {ndata_finite}')
         print()
 
@@ -286,7 +498,7 @@ def plot_cmodel_psf(table=None,
             ~np.isnan(table[band + '_psfMag']))
         table[band + '_psfMag'].info(['attributes', 'stats'])
         print(f'Number of finite {band}_psfMag values : {ndata_finite}')
-        print()
+
 
         ndata_finite = np.count_nonzero(
             ~np.isnan(table[band + '_cModelMag']))
@@ -303,16 +515,19 @@ def plot_cmodel_psf(table=None,
             print(index, row, unique_counts[index])
         print()
 
-        unique, unique_counts = \
-            np.unique(table['refExtendedness'], return_counts=True)
-        print('refExtendedness')
-        print(unique)
-        print(unique_counts)
-        for index, row in enumerate(unique):
-            print(index, row, unique_counts[index])
-        print()
+        data = table[band + '_extendedness']
+        if hasattr(data, "mask"):
+            n_bad = np.count_nonzero(data.mask)
+        else:
+            try:
+                n_bad = np.count_nonzero(np.isinf(data) | np.isnan(data))
+            except Exception:
+                n_bad = 0
+        ndata_bad = n_bad
+        logger.info(f'ndata_bad = {ndata_bad}')
 
-        label = str(ndata_finite) + '/' + str(ndata)
+        label = (str(ndata) + '/ ' + str(ndata_finite) +
+                 '/ ' + str(ndata_bad))
         plt.plot(np.nan, np.nan, color='None', label=label)
 
         xlabel = band + '_' + magtype1 + ' - ' + \
@@ -323,9 +538,30 @@ def plot_cmodel_psf(table=None,
         ndata_finite = np.count_nonzero(~np.isnan(xdata_save))
         print(f'Number of finite {band}_{magtype1} - {band}_{magtype2} values : {ndata_finite}')
 
+        logger.info('\n')
 
         ycolname = band + '_' + magtype1
         ydata_save = table[ycolname]
+
+        itest = (table[colname_extendedness] != 1) & \
+            (table[colname_extendedness] != 0)
+
+        extendedness = table[colname_extendedness]
+        print(f'extendness range: ' +
+              f'{np.min(extendedness[itest])} ' +
+              f'{np.max(extendedness[itest])} ' +
+              f'{np.median(extendedness[itest])}')
+
+        xdata = xdata_save[itest]
+        ydata = ydata_save[itest]
+        ndata = len(xdata)
+        label = str(ndata)
+        plt.plot(xdata, ydata, 'ko',
+                 markersize=markersize/2.0,
+                 markerfacecolor='none',
+                 markeredgecolor='black',
+                 label=label)
+
 
         # extended sources
         if not refExtendedness:
@@ -345,7 +581,7 @@ def plot_cmodel_psf(table=None,
             itest = (table[band + '_extendedness'] == 0)
         if refExtendedness:
             itest = (table['refExtendedness'] == 0)
-            plot_suptitle = 'refExtendedness'
+            legend_title = 'refExtendedness'
 
         xdata = xdata_save[itest]
         ydata = ydata_save[itest]
@@ -363,13 +599,16 @@ def plot_cmodel_psf(table=None,
         if yrange is not None:
             plt.ylim(yrange)
 
-        plt.legend(loc='upper right')
+        plt.gca().invert_yaxis()
+
+        plt.legend(title=legend_title, loc='upper right')
         plt.grid()
+
         plt.xlabel(xlabel)
         plt.ylabel(ycolname)
+
         plt.title(plot_title)
-        plt.gca().invert_yaxis()
-        plt.suptitle(plot_suptitle)
+        # plt.suptitle(plot_suptitle)
 
         timestamp = time.strftime('%Y-%m-%dT%H:%M', time.gmtime())
         footnote2 = os.path.basename(__file__) + ': ' + timestamp
@@ -1388,6 +1627,104 @@ def  plot_hist_psfFlux_S_N(table=None,
 
     return
 
+def desi_plot_hist_redshift(table=None):
+
+    fig, axes = plt.subplots(1, 2, figsize=(12,6))
+
+    itest = (table['SPECTYPE'] == 'QSO')
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': QSO'
+    axes[0].hist(xdata, bins=bins,
+                 histtype='step',
+                 color='black',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    itest = (table['SPECTYPE'] == 'QSO') & (table['refExtendedness'] == 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness = 0'
+    axes[0].hist(xdata, bins=bins,
+                 histtype='step',
+                 color='blue',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+
+    itest = (table['SPECTYPE'] == 'QSO') & (table['refExtendedness'] != 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness != 0'
+    axes[0].hist(xdata, bins=bins,
+                 histtype='step',
+                 color='red',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    axes[0].legend()
+    axes[0].set_xlabel('Redshift')
+    axes[0].set_ylabel('Number per bin')
+
+
+    itest = (table['SPECTYPE'] != 'QSO')
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': not QSO'
+    axes[1].hist(xdata, bins=bins,
+                 color='black',
+                 linewidth=2,
+                 histtype='step',
+                 range=zrange,
+                 label=label)
+
+
+    itest = (table['SPECTYPE'] != 'QSO') & (table['refExtendedness'] == 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness = 0'
+    axes[1].hist(xdata, bins=bins,
+                 color='blue',
+                 linewidth=2,
+                 histtype='step',
+                 range=zrange,
+                 label=label)
+
+
+    itest = (table['SPECTYPE'] != 'QSO') & (table['refExtendedness'] != 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness != 0'
+    axes[1].hist(xdata, bins=bins,
+                 color='red',
+                 linewidth=2,
+                 histtype='step',
+                 range=zrange,
+                 label=label)
+
+    axes[1].legend()
+    axes[1].set_xlabel('Redshift')
+    axes[1].set_ylabel('Number per bin')
+
+    fig.suptitle(plot_title)
+
+    plt.tight_layout()
+
+    plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
+        '_xm_' + \
+        os.path.basename(table2.meta['Filename'])
+
+    plotfile = plotfile_prefix + '_hist_redshift_bySpecType.png'
+    logging.info(f'Saving plotfile: {plotfile}')
+    plt.savefig(plotfile)
+
+
+    plt.show()
+
+    return
 
 
 # do some tests here

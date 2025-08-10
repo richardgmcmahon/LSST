@@ -1,6 +1,10 @@
-"""
+"""xmatch with LSST DP1
 
-xmatch with LSST DP1
+https://sdm-schemas.lsst.io/dp1.html
+
+Reference band - parameters measured on coadds of this band were used for
+multi-band forced photometry
+
 
 JWST image viewer:
 
@@ -54,183 +58,10 @@ from rgm_util import plot_radec
 
 import astrolinks
 
-help(plot_radec)
+# help(plot_radec)
 
 import xmatch as xm
 # help(xm)
-
-
-def get_desi_agn_maskbits(file):
-    """
-
-
-
-
-    """
-
-    import yaml
-    from desiutil_bitmask import BitMask
-    file_yaml = open(file, 'r')
-    yaml_defs = yaml.safe_load(file_yaml)
-
-    AGN_MASKBITS = BitMask('AGN_MASKBITS', yaml_defs)
-    OPT_UV_TYPE = BitMask('OPT_UV_TYPE', yaml_defs)
-    IR_TYPE = BitMask('IR_TYPE', yaml_defs)
-
-    return AGN_MASKBITS, OPT_UV_TYPE, IR_TYPE
-
-
-def explore_desi_VAC_AGNQSO(table=None):
-    """
-
-
-    """
-
-    """
-    infile = table.meta['Filename']
-    # Open the catalog
-    logging.info(f'Reading {infile}')
-    agn_hdul = fits.open(infile, format='fits')
-    agn_hdul.info()
-
-    # Load the catalog into Astropy tables
-    T = Table(agn_hdul[1].data)
-    T.info(['attributes', 'stats'])
-    #T2 = Table(agn_hdul[2].data)
-
-    T.columns
-    """
-
-    T = table
-
-    # MAIN_PRIMARY
-    print()
-    unique_main_primary, unique_counts = \
-        np.unique(table['MAIN_PRIMARY'], return_counts=True)
-    print(unique_main_primary)
-    print(unique_counts)
-    for index, main_primary in enumerate(unique_main_primary):
-        print(index, main_primary, unique_counts[index])
-
-    # SV_PRIMARY
-    print()
-    unique_sv_primary, unique_counts = \
-        np.unique(table['SV_PRIMARY'], return_counts=True)
-    print(unique_sv_primary)
-    print(unique_counts)
-    for index, sv_primary in enumerate(unique_sv_primary):
-        print(index, sv_primary, unique_counts[index])
-
-    # ZCAT_PRIMARY
-    print()
-    unique_zcat_primary, unique_counts = \
-        np.unique(table['ZCAT_PRIMARY'], return_counts=True)
-    print(unique_zcat_primary)
-    print(unique_counts)
-    for index, zcat_primary in enumerate(unique_zcat_primary):
-        print(index, zcat_primary, unique_counts[index])
-
-    AGN_MASKBITS, OPT_UV_TYPE, IR_TYPE = get_agn_maskbits('./agnmask.yaml')
-
-    print()
-    print(AGN_MASKBITS)
-
-    # Compare redshift distributions of different AGN classes
-    # Labels for the legend, names of AGN types in the mask,
-    # colors for plotting
-    agnlabels = ['QSO (RR)', 'QSO (MGII)', 'QSO (QN)', 'QSO (QN_BGS)', 'QSO (QN_ELG)', 'BPT_ANY_SY', 'WISE_ANY_AGN']
-    agntypes = ['RR', 'MGII', 'QN', 'QN_BGS', 'QN_ELG', 'BPT_ANY_SY', 'WISE_ANY_AGN']
-    colors = ['red', 'purple', 'tab:purple', 'tab:cyan', 'tab:blue', 'blue', 'black']
-
-
-    # Initialize figure
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12,5), sharex=True)
-
-    # Default range for plotting redshift 0 < z < 6.0
-    rz = (0, 5.0)
-    bins = 50
-
-    rz = (3.0, 6.0)
-    bins = 30
-
-    ndata = len(T['Z'])
-    zmin = np.min(T['Z'])
-    zmax = np.max(T['Z'])
-
-    logging.info(f'Redshift range: {zmin} {zmax} {ndata}')
-
-    # Left-hand panel: full catalog + only secure redshifts
-
-    label = 'All: ' + str(ndata)
-    ax1.hist(T['Z'],bins=bins, range=(rz), histtype='step',
-             lw=2, color='gray', ls='--', label=label)
-
-    xdata = T['Z'][T['ZWARN']==0]
-    ndata = len(xdata)
-    label = 'ZWARN=0: ' + str(ndata)
-    ax1.hist(xdata, bins=bins,
-             range=(rz), histtype='step', lw=2, color='k',
-             label=label)
-
-    # WHAN available
-    xdata = T['Z'][(T['ZWARN']==0)&(T['OPT_UV_TYPE']& OPT_UV_TYPE.WHAN != 0)]
-    ndata = len(xdata)
-    label = 'WHAN available: ' + str(ndata)
-    ax1.hist(xdata, bins=bins, range=(rz),
-             histtype='step', lw=2,
-             color='orange', label=label)
-
-    # BPT available
-    xdata = T['Z'][(T['ZWARN']==0) &
-                   (T['OPT_UV_TYPE'] & OPT_UV_TYPE.NII_BPT != 0)]
-    ndata = len(xdata)
-    label = 'BPT available: ' + str(ndata)
-    ax1.hist(xdata, bins=bins, range=(rz),
-             histtype='step', lw=2, color='b',
-             label=label)
-
-    # WISE (W1, W2) available [some diagrams need W1, W2, W3]
-    xdata = T['Z'][(T['ZWARN']==0)&(T['IR_TYPE'] & IR_TYPE.WISE_W12 != 0)]
-    ndata = len(xdata)
-    label = 'WISE 1,2 available: ' + str(ndata)
-    ax1.hist(xdata, bins=bins, range=(rz),
-             histtype='step', lw=2, color='r',
-             label=label)
-
-    # Right-hand panel: selected classes of AGN/QSO
-    for i, agn in enumerate(agntypes):
-        sel = (T['AGN_MASKBITS'] & AGN_MASKBITS[agn] != 0)
-        print(agn)
-        print(f'len(sel) {len(sel)}')
-        print(f"len(T['Z'][sel]): {len(T['Z'][sel])}")
-        col = colors[i]
-
-        # ndata = len(sel)
-        # label = 'All: ' + str(ndata)
-        ax2.hist(T['Z'][sel], bins=bins, range=(rz),
-                 alpha=0.1, color=col)
-
-        ax2.hist(T['Z'][sel], bins=bins, range=(rz), label=agnlabels[i],
-                 histtype='step', lw=2, color=col)
-
-    # Axis labels
-    ax1.set_xlabel('Redshift')
-    ax1.set_ylabel('Number of spectra')
-    ax2.set_xlabel('Redshift')
-
-    # Legends
-    ax1.legend(fontsize=10)
-    ax2.legend(fontsize=10)
-
-    plotfile_prefix = os.path.basename(table.meta['Filename'])
-    plotfile = plotfile_prefix + '_DESI_VAC_AGN_Histogram_Redshift_2' + '.png'
-    logging.info(f'Saving plotfile: {plotfile}')
-
-    plt.savefig(plotfile)
-
-    plt.show()
-
-    return
 
 
 
@@ -242,6 +73,7 @@ def xmatch_tables(infile1=None,
                   colnames_radec_table2=['RAJ2000', 'DECJ2000'],
                   checkplots=True,
                   showplots=True,
+                  show_table_in_browser=True,
                   verbose = False,
                   infostats=True,
                   selfmatch=False,
@@ -312,6 +144,7 @@ def xmatch_tables(infile1=None,
 
     suptitle_prefix = filename1
     plotfile_prefix = filename1 + '_'
+    logger.info('showplots: {showplots}')
     plot_radec(table=table1,
                colnames_radec=colnames_radec_table1,
                plotfile_prefix=plotfile_prefix,
@@ -497,11 +330,12 @@ def xmatch_tables(infile1=None,
                            names=['dr', 'dra', 'ddec'])
 
 
-    show_result_table_in_browser = True
-    if show_result_table_in_browser:
+    if show_table_in_browser:
         result.show_in_browser(jsviewer=True)
-        result.write('tmp.html', format='ascii.html', overwrite=True)
-        result.write('tmp2.html', format='jsviewer', overwrite=True)
+        input('Enter any key to continue... ')
+
+    result.write('tmp.html', format='ascii.html', overwrite=True)
+    result.write('tmp2.html', format='jsviewer', overwrite=True)
 
     if infostats:
         result.info(['attributes', 'stats'])
@@ -694,41 +528,6 @@ def radec_window(table=None,
 
 
 
-def plot_hist_count_unique_targetids(table=None):
-
-
-    unique_targetids, unique_counts = \
-    np.unique(table['TARGETID'], return_counts=True)
-    itest = (unique_counts == 1)
-    ndata = len(unique_targetids)
-    ntargetids = len(table)
-    print(unique_counts)
-    itest = (unique_counts > 1)
-    sum_gt_1 = np.sum(unique_counts[itest])
-    print(sum_gt_1)
-    nmax = np.max(unique_counts)
-    label = 'TARGETID Unique/All: ' + str(ndata) + \
-        ' ' + str(ntargetids)
-    logging.info(label)
-
-    plt.figure(figsize=(8,5))
-
-    plt.hist(unique_counts, bins=nmax, range=(0.5, nmax+0.5),
-             log=False, label=label)
-
-    plt.ylabel('Frequency')
-    plt.xlabel('Number of entries per TARGETID')
-    plt.title(plot_title, fontsize='medium')
-    plt.legend()
-
-    plotfile = plotfile_prefix + 'hist_unique_targetid.png'
-    logging.info(f'Saving plotfile: {plotfile}')
-    plt.savefig(plotfile)
-
-    plt.show()
-
-    return
-
 
 def explore_all(table=None, plot_title=None,
                 plotfile_prefix=None,
@@ -765,22 +564,11 @@ def getargs():
     return args
 
 
+def mk_mylogger(logfile_prefix=''):
 
-# do your work here
-if __name__ == "__main__":
-
-    #plt.figure(figsize=(10,5))
-
-    # import TempleModels as tm
-    # colors_dict = tm.get_colors_nested_dict()
-
-    debug = False
-    verbose = False
-
-    config = configparser.ConfigParser()
-
-    timestamp = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
-    filename_timestamp = time.strftime('%Y%m%dT%H%M', time.gmtime())
+    import sys
+    import getpass
+    import logging
 
     username = getpass.getuser()
     print('__name__:', __name__)
@@ -815,32 +603,66 @@ if __name__ == "__main__":
     logger.info(__name__)
     logger.info(__file__)
 
+
+    return logger
+
+
+
+
+# do your work here
+if __name__ == "__main__":
+
+
+
+    #plt.figure(figsize=(10,5))
+
+    # import TempleModels as tm
+    # colors_dict = tm.get_colors_nested_dict()
+
+
+    timestamp = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
+    filename_timestamp = time.strftime('%Y%m%dT%H%M', time.gmtime())
+
+    logger = mk_mylogger()
+
     t0 = time.time()
+
+    debug = False
+    verbose = False
+
+    show_table_in_browser = False
+    show_table_in_browser_jsviewer = False
+
 
     xmatch_selfmatch = False
     xmatch_multimatch = True
     xmatch_seplimit_initial = 5.0
     xmatch_seplimit_final = 1.0
 
-    xmatch_checkplots = True
-    xmatch_showplots = True
-    infostats = True
+    xmatch_checkplots = False
+    xmatch_showplots = False
+
+    infostats = False
 
     run_LRD = False
     run_JWST = False
-    run_Milliquas = False
-    run_DESI_AGNQSO_VAC = True
+    run_Milliquas = True
+    run_DESI_AGNQSO_VAC = False
 
+    # move these to explore_dp1
     run_cmodel_psf = False
     run_color_color = False
     run_color_mag = False
 
     zrange = (0.0, 6.0)
-    zmin_list = 4.5
+    zmin_list = 4.0
 
+
+    config = configparser.ConfigParser()
     if run_Milliquas:
         configfile = 'Milliquas.cfg'
         logger.info('Read configfile: ' + configfile)
+
         config.read(configfile)
 
         sectionName = 'DEFAULT'
@@ -859,7 +681,8 @@ if __name__ == "__main__":
         logging.info('Number of columns: ' +
                      str(len(milliquas.colnames)) + ' ' +
                      str(len(milliquas.columns)))
-        milliquas.info(['attributes', 'stats'])
+        if infostats:
+            milliquas.info(['attributes', 'stats'])
 
         colnames_radec_milliquas = ['RAdeg', 'DEdeg']
         colname_redshift = 'z'
@@ -870,6 +693,7 @@ if __name__ == "__main__":
         table_xmatch = Table.read(infile_xmatch)
         table_xmatch.meta['Filename'] = infile_xmatch
 
+        # if infostats:
         table_xmatch.info()
 
         colnames_radec_xmatch = ['TARGET_RA', 'TARGET_DEC']
@@ -909,7 +733,9 @@ if __name__ == "__main__":
     # filename_lsst = 'DP1_ECDFS_Object.fits'
     # filename_lsst = 'objtab_dp1_EDFS.fits'
     # filename_lsst = 'objtab_dp1_LELF.fits'
-    filename_lsst = 'DP1_All_ObjectThin.fits'
+    filename_lsst = 'DP1_ObjectThin.fits'
+
+
 
     infile_lsst = inpath_lsst + filename_lsst
     colnames_radec_lsst = ['coord_ra', 'coord_dec']
@@ -924,10 +750,15 @@ if __name__ == "__main__":
              str(len(table_lsst.columns)))
     logging.info(f'Elapsed time(secs): {time.time() - t0}')
 
-    table_lsst.info(['attributes', 'stats'])
+    if infostats:
+        table_lsst.info(['attributes', 'stats'])
     logging.info(f'Elapsed time(secs): {time.time() - t0}\n')
 
     lu.count_refband(table=table_lsst)
+
+    lu.explore_refExtendedness(table=table_lsst)
+
+    logger.info(f"{table_lsst.meta['Filename']} {len(table_lsst)}")
 
     # explore_all(table=table_lsst)
     plot_title = table_lsst.meta['Filename']
@@ -949,480 +780,6 @@ if __name__ == "__main__":
 
 
     """
-    if run_cmodel_psf:
-
-        table = table_lsst
-
-        band_flaglist = ['blendedness_flag',
-                         'cModel_flag',
-                         'free_cModelFlux_flag',
-                         'free_psfFlux_flag',
-                         'extendedness_flag',
-                         'i_flag',
-                         'psfFlux_flag']
-
-        flaglist = ['shape_flag']
-
-        lu.table_flag_info(table=table,
-                           band_flaglist=band_flaglist)
-
-        """
-        table_clean = lu.table_flag_clean(table=table,
-                         band_flaglist=band_flaglist)
-
-        table = table_clean
-        """
-
-        ndata = len(table)
-        logger.info(f"Table: {table.meta['Filename']}")
-        logger.info(f'Number of sources in table: {ndata}')
-
-        itest = (table['shape_flag'] == 0)
-        ntrue = itest.sum()
-        logger.info(f'Number of sources with shape_flag == 0: {ntrue}')
-
-        ntrue= (table['u_i_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_i_flag == 0: {ntrue}')
-
-        ntrue= (table['u_psfFlux_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_psfFlux_flag == 0: {ntrue}')
-
-        ntrue= (table['u_free_psfFlux_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_free_psfFlux_flag == 0: {ntrue}')
-
-        ntrue= (table['u_cModel_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_cModel_flag == 0: {ntrue}')
-
-        ntrue= (table['u_free_cModelFlux_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_free_cModelFlux_flag == 0: {ntrue}')
-        ntrue= (table['u_blendedness_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_blendedness_flag == 0: {ntrue}')
-
-        ntrue= (table['u_extendedness_flag']  == 0).sum()
-        logger.info(f'Number of sources with u_extendedness_flag == 0: {ntrue}')
-
-        ntrue= (table['u_psfFlux']  > 0).sum()
-        logger.info(f'Number of sources with u_psfFlux > 0: {ntrue}')
-
-        ntrue= (table['u_cModelFlux']  > 0).sum()
-        logger.info(f'Number of sources with u_cModelFlux > 0: {ntrue}')
-
-        """
-        itest = (table['shape_flag'] == 0) & \
-            (table['u_blendedness_flag'] == 0) & \
-            (table['u_cModel_flag'] == 0) & \
-            (table['u_free_cModelFlux_flag']  == 0) & \
-            (table['u_free_psfFlux_flag']  == 0) & \
-            (table['u_extendedness_flag'] == 0) & \
-            (table['u_i_flag'] == 0) & \
-            (table['u_psfFlux_flag'] == 0) & \
-            (table['u_cModelFlux']  > 0) & \
-            (table['u_psfFlux']  > 0)
-
-
-        """
-
-        ndata = len(table)
-        logger.info(f'Number of sources in table: {ndata}')
-        itest = (table['shape_flag'] == 0)
-        table = table[itest]
-
-        ndata = len(table)
-        print()
-        logger.info(f'Number of sources in table: {ndata}')
-
-        lu.plot_cmodel_psf(table=table,
-                           band_flaglist=band_flaglist,
-                           xrange=xrange,
-                           yrange=yrange,
-                           plot_title=plot_title,
-                           plotfile_prefix=plotfile_prefix)
-
-
-        lu.plot_cmodel_psf(table=table,
-                           band_flaglist=band_flaglist,
-                           refExtendedness=True,
-                           xrange=xrange,
-                           yrange=yrange,
-                           plot_title=plot_title,
-                           plotfile_prefix=plotfile_prefix)
-
-
-    if run_color_color:
-
-        table = table_lsst
-
-        table_clean = lu.table_flag_clean(table=table,
-                                      bandlist=['u', 'g', 'r'],
-                                          band_flaglist=band_flaglist)
-
-        lu.plot_colour_colour(
-            table=table,
-            colname_xband1='u'+'_psfMag',
-            colname_xband2='g'+'_psfMag',
-            colname_yband1='g'+'_psfMag',
-            colname_yband2='r'+'_psfMag',
-            xlabel='u'+'_psfMag'+' - '+'g'+'_psfMag',
-            ylabel='g'+'_psfMag'+' - '+'r'+'_psfMag',
-            showplot=False,
-            overplot_TempleModels=True)
-
-
-        colourmagsx = ['u', 'g']
-        colourmagsy = ['g', 'r']
-        plot_colourrangex = (-1.0, 4.0)
-        plot_colourrangey = (-1.0, 4.0)
-        tm.plot_colour_colour(colours_nested_dict=colours_dict,
-                           colourmagsx=colourmagsx,
-                           colourmagsy=colourmagsy,
-                           absmaglist=
-                           ['M20', 'M22', 'M24', 'M26', 'M28'],
-                           plot_colourrangex=plot_colourrangex,
-                           plot_colourrangey=plot_colourrangey)
-        #                   showplots=showplots)
-
-        plt.show()
-
-
-
-        itest = (table_lsst['refExtendedness'] == 0) & \
-            (table_lsst['g_psfMag'] <= 22.5)
-        table = table_lsst[itest]
-        print(f"u_psfMag range: {np.min(table['u_psfMag'])} " +
-              f"{np.max(table['u_psfMag'])} {len(table)}")
-        print(f"u_psfFlux range: {np.min(table['u_psfFlux'])} " +
-              f"{np.max(table['u_psfFlux'])} {len(table)}")
-
-        xrange=(-1.0, 4.0)
-        yrange=(-0.5, 2.5)
-        plot_suptitle = '(refExtendedness == 0) & (g_psfMag <= 22.5)'
-        lu.plot_colour_colour(
-            suptitle=plot_suptitle,
-            table=table,
-            markercolor='blue',
-            xrange=xrange,
-            yrange=yrange,
-            colname_xband1='u'+'_psfMag',
-            colname_xband2='g'+'_psfMag',
-            colname_yband1='g'+'_psfMag',
-            colname_yband2='r'+'_psfMag',
-            xlabel='u'+'_psfMag'+' - '+'g'+'_psfMag',
-            ylabel='g'+'_psfMag'+' - '+'r'+'_psfMag',
-            showplot=False,
-            overplot_TempleModels=True)
-
-        tm.plot_colour_colour(colours_nested_dict=colours_dict,
-                           colourmagsx=colourmagsx,
-                           colourmagsy=colourmagsy,
-                           absmaglist=
-                           ['M20', 'M22', 'M24', 'M26', 'M28'],
-                           plot_colourrangex=plot_colourrangex,
-                           plot_colourrangey=plot_colourrangey)
-        #                   showplots=showplots)
-
-        plt.show()
-
-
-
-
-        itest = (table_lsst['refExtendedness'] == 1) & \
-            (table_lsst['g_psfMag'] <= 22.5)
-        plot_suptitle = '(refExtendedness == 1) & (g_psfMag <= 22.5)'
-        table = table_lsst[itest]
-        lu.plot_colour_colour(
-            table=table,
-            suptitle=plot_suptitle,
-            markercolor='red',
-            xrange=xrange,
-            yrange=yrange,
-            colname_xband1='u'+'_psfMag',
-            colname_xband2='g'+'_psfMag',
-            colname_yband1='g'+'_psfMag',
-            colname_yband2='r'+'_psfMag',
-            xlabel='u'+'_psfMag'+' - '+'g'+'_psfMag',
-            ylabel='g'+'_psfMag'+' - '+'r'+'_psfMag',
-            showplot=False,
-            overplot_TempleModels=True)
-
-
-        tm.plot_colour_colour(colours_nested_dict=colours_dict,
-                           colourmagsx=colourmagsx,
-                           colourmagsy=colourmagsy,
-                           absmaglist=
-                           ['M20', 'M22', 'M24', 'M26', 'M28'],
-                           plot_colourrangex=plot_colourrangex,
-                           plot_colourrangey=plot_colourrangey)
-        #                   showplots=showplots)
-
-        plt.show()
-
-
-
-        # gri
-        itest = (table_lsst['i_extendedness'] == 0) & \
-            (table_lsst['i_psfMag'] < 23.5)
-        table = table_lsst[itest]
-
-        magtype = 'psfMag'
-        xband1 = 'g'
-        xband2 = 'r'
-        yband1 = 'r'
-        yband2 = 'i'
-
-        colname_xband1 = xband1 + '_' + magtype
-        colname_xband2 = xband2 + '_' + magtype
-        colname_yband1 = yband1 + '_' + magtype
-        colname_yband2 = yband2 + '_' + magtype
-
-        xlabel= colname_xband1 + ' - ' + colname_xband2
-        ylabel= colname_yband1 + ' - ' + colname_yband2
-
-        table = table_lsst
-        title = table.meta['Filename']
-        lu.plot_colour_colour(table=table,
-                             title=title,
-                             colname_xband1=colname_xband1,
-                             colname_xband2=colname_xband2,
-                             colname_yband1=colname_yband1,
-                             colname_yband2=colname_yband2,
-                             xlabel= xlabel,
-                             ylabel=ylabel)
-
-        itest = (table_lsst['i_extendedness'] == 0) & \
-            (table_lsst['i_psfMag'] < 23.5)
-        table = table_lsst[itest]
-
-        title = table.meta['Filename']
-        plot_suptitle = '(i_extendedness == 0) & (i_psfMag <= 23.5)'
-        xrange=(-1.0, 4.0)
-        yrange=(-1.0, 4.0)
-        lu.plot_colour_colour(table=table,
-                              markercolor='blue',
-                              suptitle=plot_suptitle,
-                              title=title,
-                              xrange=xrange,
-                              yrange=yrange,
-                              colname_xband1=colname_xband1,
-                              colname_xband2=colname_xband2,
-                              colname_yband1=colname_yband1,
-                              colname_yband2=colname_yband2,
-                              xlabel= xlabel,
-                              ylabel=ylabel,
-                              showplot=False,
-                              overplot_TempleModels=True)
-
-
-
-        colourmagsx = ['g', 'r']
-        colourmagsy = ['r', 'i']
-        plot_colourrangex = (-1.5, 5.0)
-        plot_colourrangey = (-1.5, 5.0)
-        tm.plot_colour_colour(colours_nested_dict=colours_dict,
-                           colourmagsx=colourmagsx,
-                           colourmagsy=colourmagsy,
-                           absmaglist=
-                           ['M20', 'M22', 'M24', 'M26', 'M28'],
-                           plot_colourrangex=plot_colourrangex,
-                           plot_colourrangey=plot_colourrangey)
-        #                   showplots=showplots)
-
-
-        plt.show()
-
-        itest = (table_lsst['i_extendedness'] == 1) & \
-            (table_lsst['i_psfMag'] < 23.5)
-        table = table_lsst[itest]
-
-        title = table.meta['Filename']
-        plot_suptitle = '(i_extendedness == 1) & (i_psfMag <= 23.5)'
-        xrange=(-1.0, 4.0)
-        yrange=(-1.0, 4.0)
-        lu.plot_colour_colour(table=table,
-                             markercolor='red',
-                             suptitle=plot_suptitle,
-                             title=title,
-                             xrange=xrange,
-                             yrange=yrange,
-                             colname_xband1=colname_xband1,
-                             colname_xband2=colname_xband2,
-                             colname_yband1=colname_yband1,
-                             colname_yband2=colname_yband2,
-                             xlabel= xlabel,
-                             ylabel=ylabel)
-
-
-       # izy
-        magtype = 'psfMag'
-        xband1 = 'i'
-        xband2 = 'z'
-        yband1 = 'z'
-        yband2 = 'y'
-
-        colname_xband1 = xband1 + '_' + magtype
-        colname_xband2 = xband2 + '_' + magtype
-        colname_yband1 = yband1 + '_' + magtype
-        colname_yband2 = yband2 + '_' + magtype
-
-        xlabel= colname_xband1 + ' - ' + colname_xband2
-        ylabel= colname_yband1 + ' - ' + colname_yband2
-
-        xrange=(-1.0, 4.0)
-        yrange=(-1.0, 4.0)
-
-        table = table_lsst
-
-        table = lu.table_flag_clean(table=table,
-                                          bandlist=['z', 'y'],
-                                          band_flaglist=band_flaglist)
-        title = table.meta['Filename']
-        lu.plot_colour_colour(table=table,
-                              title=title,
-                              xrange=xrange,
-                              yrange=yrange,
-                              colname_xband1=colname_xband1,
-                              colname_xband2=colname_xband2,
-                              colname_yband1=colname_yband1,
-                              colname_yband2=colname_yband2,
-                              xlabel=xlabel,
-                              ylabel=ylabel)
-
-
-        itest = (table_lsst['z_extendedness'] == 0) & \
-            (table_lsst['y_psfMag'] < 22.5)
-        plot_suptitle = '(z_extendedness == 0) & (y_psfMag <= 22.5)'
-        table = table_lsst[itest]
-        title = table.meta['Filename']
-        lu.plot_colour_colour(table=table,
-                              markercolor='blue',
-                              suptitle=plot_suptitle,
-                              title=title,
-                              xrange=xrange,
-                              yrange=yrange,
-                              colname_xband1=colname_xband1,
-                              colname_xband2=colname_xband2,
-                              colname_yband1=colname_yband1,
-                              colname_yband2=colname_yband2,
-                              xlabel=xlabel,
-                              ylabel=ylabel,
-                              showplot=False,
-                              overplot_TempleModels=True)
-
-        colourmagsx = ['i', 'z']
-        colourmagsy = ['z', 'y']
-        plot_colourrangex = (-1.0, 4.0)
-        plot_colourrangey = (-1.0, 4.0)
-        tm.plot_colour_colour(colours_nested_dict=colours_dict,
-                           colourmagsx=colourmagsx,
-                           colourmagsy=colourmagsy,
-                           absmaglist=
-                           ['M20', 'M22', 'M24', 'M26', 'M28'],
-                           plot_colourrangex=plot_colourrangex,
-                           plot_colourrangey=plot_colourrangey)
-        #                   showplots=showplots)
-
-
-
-
-        itest = (table_lsst['z_extendedness'] == 1) & \
-            (table_lsst['z_psfMag'] < 23.5)
-        plot_suptitle = '(z_extendedness == 1) & (z_psfMag <= 23.5)'
-        table = table_lsst[itest]
-        title = table.meta['Filename']
-        lu.plot_colour_colour(table=table,
-                             markercolor='red',
-                             suptitle=plot_suptitle,
-                             title=title,
-                             xrange=xrange,
-                             yrange=yrange,
-                             colname_xband1=colname_xband1,
-                             colname_xband2=colname_xband2,
-                             colname_yband1=colname_yband1,
-                             colname_yband2=colname_yband2,
-                             xlabel=xlabel,
-                             ylabel=ylabel)
-
-
-
-
-    if run_color_mag:
-
-        for iband, band1 in enumerate(wavebands[0:-1]):
-            table = table_lsst
-            title = table.meta['Filename']
-            band2 = wavebands[iband + 1]
-
-
-            lu.plot_colour_mag(table=table,
-                               title=title,
-                               band1=band1,
-                               band2=band2,
-                               magtype='psfMag',
-                               colname_band_ref=band2+'_psfMag',
-                               colname_band1=band1+'_psfMag',
-                               colname_band2=band2+'_psfMag',
-                               plotfile_prefix=plotfile_prefix,
-                               overplot_TempleModel=True)
-
-            itest = (table_lsst['refExtendedness'] == 0)
-            plot_suptitle = '(refExtendedness == 0)'
-            table = table_lsst[itest]
-            lu.plot_colour_mag(table=table,
-                               suptitle=plot_suptitle,
-                               markercolor='blue',
-                               title=title,
-                               band1=band1,
-                               band2=band2,
-                               magtype='psfMag',
-                               colname_band_ref=band2+'_psfMag',
-                               colname_band1=band1+'_psfMag',
-                               colname_band2=band2+'_psfMag',
-                               plotfile_prefix=plotfile_prefix)
-
-            itest = (table_lsst['refExtendedness'] == 1)
-            plot_suptitle = '(refExtendedness == 1)'
-            table = table_lsst[itest]
-            lu.plot_colour_mag(table=table,
-                               markercolor='red',
-                               suptitle=plot_suptitle,
-                               title=title,
-                               band1=band1,
-                               band2=band2,
-                               magtype='psfMag',
-                               colname_band_ref=band2+'_psfMag',
-                               colname_band1=band1+'_psfMag',
-                               colname_band2=band2+'_psfMag',
-                               plotfile_prefix=plotfile_prefix)
-
-
-        """
-        itest =
-        lu.plot_colour_colour(table=table_lsst,
-                           band1='z',
-                           band2='y',
-                           magtype='psfMag',
-                           colname_band_ref='y_psfMag',
-                           colname_band1='z_psfMag',
-                           colname_band2='y_psfMag')
-         """
-
-    logging.info(__file__)
-
-    if run_cmodel_psf:
-
-        xrange = (-0.5, 1.0)
-        yrange = (15.0, 25.0)
-        lu.plot_cmodel_psf(table=table_lsst,
-                           xrange=xrange,
-                           yrange=yrange,
-                           plot_title=plot_title,
-                           plotfile_prefix=plotfile_prefix)
-
-        lu.plot_cmodel_psf(table=table_lsst,
-                           refExtendedness=True,
-                           xrange=xrange,
-                           yrange=yrange,
-                           plot_title=plot_title,
-                           plotfile_prefix=plotfile_prefix)
 
 
     ra_limits_lsst, dec_limits_lsst = get_radec_limits(
@@ -1501,6 +858,7 @@ if __name__ == "__main__":
         xmatch_background_radius_limits=(5.0, 10.0),
         checkplots=xmatch_checkplots,
         showplots=xmatch_showplots,
+        show_table_in_browser=show_table_in_browser,
         verbose=verbose,
         infostats=False)
 
@@ -1526,7 +884,10 @@ if __name__ == "__main__":
 
     itest_zgte = (xdata >= zmin_list)
     print(f'Number with z>= {zmin_list}; {len(table[itest_zgte])}')
-    table[itest_zgte].show_in_browser(jsviewer=True)
+    if show_table_in_browser_jsviewer:
+        table[itest_zgte].show_in_browser(jsviewer=True)
+    input('Enter any key to continue... ')
+
     for itest, test_z in enumerate(itest_zgte):
         if test_z:
             print()
@@ -1547,7 +908,7 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(10,6))
 
-    bins=60
+    bins=30
     ndata = len(xdata)
     label = str(ndata)
     logger.info(f'{zrange} {bins}')
@@ -1560,44 +921,18 @@ if __name__ == "__main__":
     plt.title(plot_title)
     plt.legend()
 
+    plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
+        '_xm_' + \
+        os.path.basename(table2.meta['Filename'])
+    plotfile = plotfile_prefix + '_hist_redshift.png'
+    logging.info(f'Saving plotfile: {plotfile}')
+    plt.savefig(plotfile)
+
+    #if showplots:
     plt.show()
 
-
-    fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10,6))
-
-    itest = (table['SPECTYPE'] == 'QSO')
-    xdata= table[xcolname][itest]
-    ndata = len(xdata)
-    label = str(ndata) + ': QSO'
-    ax1.hist(xdata, bins=bins,
-             histtype='step',
-             range=zrange,
-             label=label)
-
-    ax1.legend()
-    ax1.set_xlabel('Redshift')
-    ax1.set_ylabel('Number per bin')
-
-
-
-    itest = (table['SPECTYPE'] != 'QSO')
-    xdata= table[xcolname][itest]
-    ndata = len(xdata)
-    label = str(ndata) + ': not QSO'
-    ax2.hist(xdata, bins=bins,
-             histtype='step',
-             range=zrange,
-             label=label)
-
-
-    ax2.legend()
-    ax2.set_xlabel('Redshift')
-    ax2.set_ylabel('Number per bin')
-
-    fig.suptitle(plot_title)
-
-    plt.tight_layout()
-    plt.show()
+    if run_DESI_AGNQSO_VAC:
+        lu.desi_plot_hist_redshift(table=table)
 
 
     markersize=6.0
@@ -1607,7 +942,8 @@ if __name__ == "__main__":
 
     xrange = (-0.5, 1.0)
     yrange = (15.0, 25.0)
-    plt.figure(figsize=(10,6))
+
+
     lu.plot_cmodel_psf(table=table,
                        xrange=xrange,
                        yrange=yrange,
@@ -1625,6 +961,10 @@ if __name__ == "__main__":
                        plotfile_prefix=plotfile_prefix)
 
 
+
+
+
+
     lu.plot_redshift_mag(table=table,
                          magtype='psfMag',
                          markersize=markersize,
@@ -1632,7 +972,7 @@ if __name__ == "__main__":
                          zrange=zrange,
                          plot_title=plot_title)
 
-
+    plt.figure(figsize=(10,6))
     lu.plot_redshift_color(table=table,
                            magtype='psfMag',
                            markersize=markersize,
