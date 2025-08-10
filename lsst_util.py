@@ -321,11 +321,11 @@ def explore_refExtendedness(table=None, band='ref',
     plt.show()
 
     print(f'bands {bands}')
+    print('Loop through the bands')
     if debug:
         input('Enter any key to continue... ')
 
     for band in bands:
-
         fig, axes = plt.subplots(1, 2, figsize=(12,6))
         colnames_subplots = [band + '_extendedness',
                              band + '_sizeExtendedness']
@@ -354,13 +354,14 @@ def explore_refExtendedness(table=None, band='ref',
             label = f'{ndata}/ {ndata_good}/ {ndata_bad}'
             plot_title = table.meta['Filename']
 
-            axes[iplot].hist(xdata, bins=100, label=label)
-            axes[iplot].set_yscale('log')
+            if ndata_good > 0:
+                axes[iplot].hist(xdata, bins=100, label=label)
+                axes[iplot].set_yscale('log')
 
-            axes[iplot].legend(title=legend_title, loc='upper center')
-            axes[iplot].set_xlabel(colname)
-            axes[iplot].set_ylabel('Number per bin')
-            axes[iplot].set_title(plot_title)
+                axes[iplot].legend(title=legend_title, loc='upper center')
+                axes[iplot].set_xlabel(colname)
+                axes[iplot].set_ylabel('Number per bin')
+                axes[iplot].set_title(plot_title)
 
         logger.info('\n')
 
@@ -411,9 +412,6 @@ def explore_refExtendedness(table=None, band='ref',
     logger.info('\n')
 
 
-
-
-
     return
 
 
@@ -458,7 +456,6 @@ def plot_cmodel_psf(table=None,
     explore_refExtendedness(table=table)
 
     logger.info('\n')
-
     print('Next cycle through bands')
     if debug:
         input('Enter any key to continue... ')
@@ -1647,12 +1644,18 @@ def  plot_hist_psfFlux_S_N(table=None,
     return
 
 
-def plot_hist_redshift(table=table, bins=30, zrange=(0.0, 6.0)):
+def plot_hist_redshift(table=None,
+                       colname_redshift=None,
+                       bins=30, zrange=(0.0, 6.0),
+                       plot_title='',
+                       plotfile_prefix=''):
+
 
     plt.figure(figsize=(10,6))
 
+    xcolname = colname_redshift
 
-    bins=30
+    xdata= table[xcolname]
     ndata = len(xdata)
     label = str(ndata)
     logger.info(f'{zrange} {bins}')
@@ -1690,9 +1693,6 @@ def plot_hist_redshift(table=table, bins=30, zrange=(0.0, 6.0)):
     plt.title(plot_title)
     plt.legend()
 
-    plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
-        '_xm_' + \
-        os.path.basename(table2.meta['Filename'])
     plotfile = plotfile_prefix + '_hist_redshift.png'
     logging.info(f'Saving plotfile: {plotfile}')
     plt.savefig(plotfile)
@@ -1700,12 +1700,64 @@ def plot_hist_redshift(table=table, bins=30, zrange=(0.0, 6.0)):
     #if showplots:
     plt.show()
 
+
+    fig, axes = plt.subplots(1, 2, figsize=(12,6))
+
+    itest = (table['refExtendedness'] == 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness = 0'
+    axes[0].hist(xdata, bins=bins,
+                 histtype='step',
+                 color='blue',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    axes[0].legend()
+    axes[0].set_xlabel('Redshift')
+    axes[0].set_ylabel('Number per bin')
+
+
+
+    itest = (table['refExtendedness'] != 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness != 0'
+    axes[1].hist(xdata, bins=bins,
+                 color='red',
+                 linewidth=2,
+                 histtype='step',
+                 range=zrange,
+                 label=label)
+
+    axes[1].legend()
+    axes[1].set_xlabel('Redshift')
+    axes[1].set_ylabel('Number per bin')
+
+    fig.suptitle(plot_title)
+
+    plt.tight_layout()
+
+    plotfile = plotfile_prefix + '_hist_redshift_byExtendedness.png'
+    logging.info(f'Saving plotfile: {plotfile}')
+    plt.savefig(plotfile)
+
+
+    plt.show()
+
     return
 
 
-def desi_plot_hist_redshift(table=None):
+def desi_plot_hist_redshift(table=None,
+                            colname_redshift=None,
+                            bins=30, zrange=(0.0, 6.0),
+                            plot_title='',
+                            plotfile_prefix=''):
 
     fig, axes = plt.subplots(1, 2, figsize=(12,6))
+
+    xcolname = colname_redshift
 
     itest = (table['SPECTYPE'] == 'QSO')
     xdata= table[xcolname][itest]
@@ -1788,10 +1840,6 @@ def desi_plot_hist_redshift(table=None):
     fig.suptitle(plot_title)
 
     plt.tight_layout()
-
-    plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
-        '_xm_' + \
-        os.path.basename(table2.meta['Filename'])
 
     plotfile = plotfile_prefix + '_hist_redshift_bySpecType.png'
     logging.info(f'Saving plotfile: {plotfile}')

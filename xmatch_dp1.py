@@ -612,13 +612,10 @@ def mk_mylogger(logfile_prefix=''):
 # do your work here
 if __name__ == "__main__":
 
-
-
     #plt.figure(figsize=(10,5))
 
     # import TempleModels as tm
     # colors_dict = tm.get_colors_nested_dict()
-
 
     timestamp = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
     filename_timestamp = time.strftime('%Y%m%dT%H%M', time.gmtime())
@@ -633,7 +630,6 @@ if __name__ == "__main__":
     show_table_in_browser = False
     show_table_in_browser_jsviewer = False
 
-
     xmatch_selfmatch = False
     xmatch_multimatch = True
     xmatch_seplimit_initial = 5.0
@@ -646,8 +642,8 @@ if __name__ == "__main__":
 
     run_LRD = False
     run_JWST = False
-    run_Milliquas = True
-    run_DESI_AGNQSO_VAC = False
+    run_Milliquas = False
+    run_DESI_AGNQSO_VAC = True
 
     # move these to explore_dp1
     run_cmodel_psf = False
@@ -656,7 +652,6 @@ if __name__ == "__main__":
 
     zrange = (0.0, 6.0)
     zmin_list = 4.0
-
 
     config = configparser.ConfigParser()
     if run_Milliquas:
@@ -906,62 +901,23 @@ if __name__ == "__main__":
 
     # sys.exit()
 
-    plt.figure(figsize=(10,6))
-
-
-
-    bins=30
-    ndata = len(xdata)
-    label = str(ndata)
-    logger.info(f'{zrange} {bins}')
-    plt.hist(xdata, bins=bins,
-             histtype='step',
-             color='black',
-             linewidth=2,
-             range=zrange,
-             label=label)
-
-    itest = (table['refExtendedness'] == 0)
-    xdata= table[xcolname][itest]
-    ndata = len(xdata)
-    label = str(ndata) + ': refExtendness = 0'
-    plt.hist(xdata, bins=bins,
-                 histtype='step',
-                 color='blue',
-                 linewidth=2,
-                 range=zrange,
-                 label=label)
-
-    itest = (table['refExtendedness'] != 0)
-    xdata= table[xcolname][itest]
-    ndata = len(xdata)
-    label = str(ndata) + ': refExtendness != 0'
-    plt.hist(xdata, bins=bins,
-                 histtype='step',
-                 color='red',
-                 linewidth=2,
-                 range=zrange,
-                 label=label)
-
-    plt.xlabel('Redshift')
-    plt.ylabel('Number per bin')
-    plt.title(plot_title)
-    plt.legend()
-
     plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
         '_xm_' + \
         os.path.basename(table2.meta['Filename'])
-    plotfile = plotfile_prefix + '_hist_redshift.png'
-    logging.info(f'Saving plotfile: {plotfile}')
-    plt.savefig(plotfile)
 
-    #if showplots:
-    plt.show()
+    xcolname = colname_redshift
+    lu.plot_hist_redshift(table=table,
+                          colname_redshift=colname_redshift,
+                          bins=30, zrange=(0.0, 6.0),
+                          plot_title=plot_title,
+                          plotfile_prefix=plotfile_prefix)
 
     if run_DESI_AGNQSO_VAC:
         logging.info('\n')
-        lu.desi_plot_hist_redshift(table=table)
-
+        lu.desi_plot_hist_redshift(table=table,
+                                   colname_redshift=colname_redshift,
+                                   plot_title=plot_title,
+                                   plotfile_prefix=plotfile_prefix)
 
     markersize=6.0
     plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
