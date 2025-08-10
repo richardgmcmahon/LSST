@@ -223,7 +223,9 @@ def table_flag_info(table=None,
     return
 
 
-def explore_refExtendedness(table=None, band='ref'):
+def explore_refExtendedness(table=None, band='ref',
+                            plot_suptitle=None,
+                            figsize=(12, 6)):
     """
 
     Explore refExtendedness and refSizeExtendedness
@@ -239,9 +241,9 @@ def explore_refExtendedness(table=None, band='ref'):
 
     """
 
-    debug = True
+    plt.close(plt.gcf())
 
-    plt.figsize=(12,6))
+    debug = True
 
     colname_list = ['refBand', 'refExtendedness', 'refSizeExtendedness']
     table[colname_list].info(['attributes', 'stats'])
@@ -298,9 +300,26 @@ def explore_refExtendedness(table=None, band='ref'):
         axes[iplot].set_title(plot_title)
 
     logger.info('\n')
+
+    timestamp = time.strftime('%Y-%m-%dT%H:%M', time.gmtime())
+
+    footnote1 = timestamp + ': ' + \
+            os.path.basename(__file__)
+
+    plt.figtext(0.01, 0.01, footnote1,
+                    ha="left", fontsize=8,
+                    bbox={"facecolor":'none', 'edgecolor':'none',
+                          "alpha":0.5, "pad":2})
+
+    footnote2 = os.path.basename(__file__)
+    plt.figtext(0.99, 0.50, footnote2,
+                    rotation='vertical',
+                    ha="right", fontsize=8,
+                    bbox={"facecolor":'none', 'edgecolor':'none',
+                          "alpha":0.5, "pad":2})
+
     plt.show()
 
-    fig, axes = plt.subplots(1, 2, figsize=(12,6))
     print(f'bands {bands}')
     if debug:
         input('Enter any key to continue... ')
@@ -867,10 +886,10 @@ def plot_color_mag(
                          '_v_' + colname_band1 + '.png')
 
     timestamp = time.strftime('%Y-%m-%dT%H:%M', time.gmtime())
-    footnote = timestamp + ': ' + \
+    footnote1 = timestamp + ': ' + \
         os.path.basename(__file__) + ': ' + \
         plotfile
-    plt.figtext(0.01, 0.01, footnote,
+    plt.figtext(0.01, 0.01, footnote1,
                 ha="left", fontsize=8,
                 bbox={"facecolor":'none', 'edgecolor':'none',
                       "alpha":0.5, "pad":2})
@@ -1118,10 +1137,10 @@ def plot_color_color(
                          '_v_' + colname_yband1 + '.png')
 
     timestamp = time.strftime('%Y-%m-%dT%H:%M', time.gmtime())
-    footnote = timestamp + ': ' + \
+    footnote1 = timestamp + ': ' + \
         os.path.basename(__file__) + ': ' + \
         plotfile
-    plt.figtext(0.01, 0.01, footnote,
+    plt.figtext(0.01, 0.01, footnote1,
                 ha="left", fontsize=8,
                 bbox={"facecolor":'none', 'edgecolor':'none',
                       "alpha":0.5, "pad":2})
@@ -1626,6 +1645,63 @@ def  plot_hist_psfFlux_S_N(table=None,
     plt.show()
 
     return
+
+
+def plot_hist_redshift(table=table, bins=30, zrange=(0.0, 6.0)):
+
+    plt.figure(figsize=(10,6))
+
+
+    bins=30
+    ndata = len(xdata)
+    label = str(ndata)
+    logger.info(f'{zrange} {bins}')
+    plt.hist(xdata, bins=bins,
+             histtype='step',
+             color='black',
+             linewidth=2,
+             range=zrange,
+             label=label)
+
+    itest = (table['refExtendedness'] == 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness = 0'
+    plt.hist(xdata, bins=bins,
+                 histtype='step',
+                 color='blue',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    itest = (table['refExtendedness'] != 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness != 0'
+    plt.hist(xdata, bins=bins,
+                 histtype='step',
+                 color='red',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    plt.xlabel('Redshift')
+    plt.ylabel('Number per bin')
+    plt.title(plot_title)
+    plt.legend()
+
+    plotfile_prefix = os.path.basename(table1.meta['Filename']) + \
+        '_xm_' + \
+        os.path.basename(table2.meta['Filename'])
+    plotfile = plotfile_prefix + '_hist_redshift.png'
+    logging.info(f'Saving plotfile: {plotfile}')
+    plt.savefig(plotfile)
+
+    #if showplots:
+    plt.show()
+
+    return
+
 
 def desi_plot_hist_redshift(table=None):
 

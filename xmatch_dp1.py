@@ -908,13 +908,40 @@ if __name__ == "__main__":
 
     plt.figure(figsize=(10,6))
 
+
+
     bins=30
     ndata = len(xdata)
     label = str(ndata)
     logger.info(f'{zrange} {bins}')
     plt.hist(xdata, bins=bins,
+             histtype='step',
+             color='black',
+             linewidth=2,
              range=zrange,
              label=label)
+
+    itest = (table['refExtendedness'] == 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness = 0'
+    plt.hist(xdata, bins=bins,
+                 histtype='step',
+                 color='blue',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
+
+    itest = (table['refExtendedness'] != 0)
+    xdata= table[xcolname][itest]
+    ndata = len(xdata)
+    label = str(ndata) + ': refExtendness != 0'
+    plt.hist(xdata, bins=bins,
+                 histtype='step',
+                 color='red',
+                 linewidth=2,
+                 range=zrange,
+                 label=label)
 
     plt.xlabel('Redshift')
     plt.ylabel('Number per bin')
@@ -932,6 +959,7 @@ if __name__ == "__main__":
     plt.show()
 
     if run_DESI_AGNQSO_VAC:
+        logging.info('\n')
         lu.desi_plot_hist_redshift(table=table)
 
 
@@ -943,7 +971,7 @@ if __name__ == "__main__":
     xrange = (-0.5, 1.0)
     yrange = (15.0, 25.0)
 
-
+    logging.info('\n')
     lu.plot_cmodel_psf(table=table,
                        xrange=xrange,
                        yrange=yrange,
@@ -951,7 +979,7 @@ if __name__ == "__main__":
                        markersize=markersize,
                        plotfile_prefix=plotfile_prefix)
 
-
+    logging.info('\n')
     lu.plot_cmodel_psf(table=table,
                        refExtendedness=True,
                        xrange=xrange,
