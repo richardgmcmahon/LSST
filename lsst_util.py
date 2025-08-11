@@ -113,16 +113,22 @@ def count_refband(table=None):
 def plot_redshift_mag(table=None,
                       magtype='psfMag',
                       zrange=(0.0, 6.0),
+                      magrange=(16.0, 26.0),
                       markercolor=None,
                       markersize=4.0,
                       colname_redshift='z',
+                      figsize=(8.0, 6.0),
                       plot_title=None,
                       plotfile_prefix='',
+                      plotpath=None,
+                      showplot=True,
                       savefig=True):
     """
 
     """
     # plot redshift v mag hubble diagram
+
+    logger.info('\n')
 
     bands = ['u', 'g','r', 'i', 'z', 'y']
     magtype = 'psfMag'
@@ -132,6 +138,9 @@ def plot_redshift_mag(table=None,
 
     xcolname = colname_redshift
     for band in bands[0:6]:
+
+        plt.figure(figsize=figsize)
+
         xdata_save = table[xcolname]
 
         ycolname = band + '_' + magtype
@@ -163,7 +172,7 @@ def plot_redshift_mag(table=None,
         plt.plot(xdata, ydata, '.b', label=label)
 
         plt.xlim(zrange)
-        plt.ylim(16.0, 28.0)
+        plt.ylim(magrange)
 
         plt.legend()
         plt.xlabel(xcolname)
@@ -223,9 +232,13 @@ def table_flag_info(table=None,
     return
 
 
-def explore_refExtendedness(table=None, band='ref',
-                            plot_suptitle=None,
-                            figsize=(12, 6)):
+def explore_extendedness(table=None,
+                         band='ref',
+                         figsize=(12, 6),
+                         plot_suptitle=None,
+                         plotfile_prefix=None,
+                         showplot=True,
+                         plotpath=None):
     """
 
     Explore refExtendedness and refSizeExtendedness
@@ -244,6 +257,8 @@ def explore_refExtendedness(table=None, band='ref',
     plt.close(plt.gcf())
 
     debug = True
+
+    filename = os.path.basename(table.meta['Filename'])
 
     colname_list = ['refBand', 'refExtendedness', 'refSizeExtendedness']
     table[colname_list].info(['attributes', 'stats'])
@@ -289,7 +304,7 @@ def explore_refExtendedness(table=None, band='ref',
         legend_title = 'All/ Good/ Masked'
         print(f'ndata all, good, bad  = {ndata} {ndata_good} {ndata_bad}')
         label = f'{ndata}/ {ndata_good}/ {ndata_bad}'
-        plot_title = table.meta['Filename']
+        plot_title = filename
 
         axes[iplot].hist(xdata, bins=100, label=label)
         axes[iplot].set_yscale('log')
@@ -299,7 +314,8 @@ def explore_refExtendedness(table=None, band='ref',
         axes[iplot].set_ylabel('Number per bin')
         axes[iplot].set_title(plot_title)
 
-    logger.info('\n')
+    if plot_suptitle is not None:
+        fig.suptitle(plot_suptitle)
 
     timestamp = time.strftime('%Y-%m-%dT%H:%M', time.gmtime())
 
@@ -318,7 +334,19 @@ def explore_refExtendedness(table=None, band='ref',
                     bbox={"facecolor":'none', 'edgecolor':'none',
                           "alpha":0.5, "pad":2})
 
-    plt.show()
+    logger.info(f'plotfile_prefix: {plotfile_prefix}')
+    if plotfile_prefix is None:
+        plotfile_prefix = filename
+
+    plotfile = (plotfile_prefix +
+                '_hist_' + colnames_subplots[0] +
+                '_' + colnames_subplots[1] + '.png')
+
+    print(f'Saving plotfile: {plotfile}')
+    plt.savefig(plotfile)
+    logger.info('\n')
+    if showplot:
+        plt.show()
 
     print(f'bands {bands}')
     print('Loop through the bands')
@@ -363,9 +391,25 @@ def explore_refExtendedness(table=None, band='ref',
                 axes[iplot].set_ylabel('Number per bin')
                 axes[iplot].set_title(plot_title)
 
+        if plot_suptitle is not None:
+            fig.suptitle(plot_suptitle)
+
+        logger.info('\n')
+        logger.info(f'plotfile_prefix: {plotfile_prefix}')
+
+        if plotfile_prefix is None:
+            plotfile_prefix = filename
+
+        plotfile = (plotfile_prefix +
+                '_hist_' + colnames_subplots[0] +
+                '_' + colnames_subplots[1] + '.png')
+
+        print(f'Saving plotfile: {plotfile}')
+        plt.savefig(plotfile)
         logger.info('\n')
 
-        plt.show()
+        if showplot:
+            plt.show()
 
     logger.info('\n')
 
@@ -411,7 +455,6 @@ def explore_refExtendedness(table=None, band='ref',
     print(f'Number of not finite refExtendedness values : {ndata_notfinite}')
     logger.info('\n')
 
-
     return
 
 
@@ -423,10 +466,11 @@ def plot_cmodel_psf(table=None,
                     xrange=None,
                     yrange=None,
                     multiplot=False,
-                    figsize=(6.0, 7.0),
+                    figsize=(7.0, 7.0),
                     plot_title=None,
                     plotfile_prefix='',
                     savefig=True,
+                    showplot=True,
                     debug=False):
     """
 
@@ -452,8 +496,6 @@ def plot_cmodel_psf(table=None,
 
     magtype1 = 'psfMag'
     magtype2 = 'cModelMag'
-
-    explore_refExtendedness(table=table)
 
     logger.info('\n')
     print('Next cycle through bands')
@@ -652,7 +694,8 @@ def plot_cmodel_psf(table=None,
 
 
         logging.info('')
-        plt.show()
+        if showplot:
+            plt.show()
 
 
     # 2up plot
@@ -673,6 +716,7 @@ def plot_redshift_color(table=None,
                          zrange=(0.0, 6.0),
                          markersize=4.0,
                          colname_redshift='z',
+                         figsize=(8.0, 6.0),
                          plot_title=None,
                          plotfile_prefix='',
                          savefig=True):
@@ -684,6 +728,8 @@ def plot_redshift_color(table=None,
     xcolname = colname_redshift
 
     for iband, band in enumerate(bands[0:5]):
+
+        pt.figure(figsize=figsize)
 
         xdata_save = table[xcolname]
 
@@ -712,7 +758,7 @@ def plot_redshift_color(table=None,
         plt.plot(xdata, ydata, '.r', label=label,
                  markersize=markersize)
 
-        print(table[band + '_extendedness'])
+        #print(table[band + '_extendedness'])
         itest = (table[band2 + '_extendedness'] == 0)
         xdata = xdata_save[itest]
         ydata = ydata_save[itest]
@@ -726,7 +772,7 @@ def plot_redshift_color(table=None,
         plt.title(plot_title)
         plt.legend()
         plt.xlabel(xcolname)
-        plt.ylabel(ycolname)
+        plt.ylabel('Reshift ' + ycolname)
 
         logging.info('')
         plt.show()
@@ -774,7 +820,7 @@ def plot_color_mag(
 
     """
 
-    filename = table.meta['Filename']
+    filename = os.path.basename(table1.meta['Filename'])
     print('plotfile_prefix:', plotfile_prefix)
     print('filename', filename)
     plot_title = filename
@@ -900,6 +946,7 @@ def plot_color_mag(
 
 
     #    lineInfo()
+    logger.info('\n')
     print('Saving:', plotfile)
     plt.savefig(plotfile)
 
@@ -977,6 +1024,8 @@ def plot_color_magnitude2(table=None,
         '_' + mag2 + plotfile_suffix + '.png'
     if plotdir is not None:
         plotfile = plotdir + plotfile
+
+    logger.info('\n')
     print('Saving plotfile:', plotfile)
     plt.savefig(plotfile)
 
@@ -1030,7 +1079,7 @@ def plot_color_color(
     timestamp = datetime.now().strftime('%y%m%d_%H%M%S')
 
 
-    filename = table.meta['Filename']
+    filename = os.path.basename(table1.meta['Filename'])
     print('plotfile_prefix:', plotfile_prefix)
     print('filename', filename)
     plot_title = title
@@ -1151,6 +1200,7 @@ def plot_color_color(
 
 
     #    lineInfo()
+    logger.info('\n')
     print('Saving:', plotfile)
     plt.savefig(plotfile)
 
@@ -1262,6 +1312,7 @@ def plot_magnitude_distribution(table=None,
     if suptitle is not None:
         plt.suptitle(suptitle)
 
+    logger.info('\n')
     plt.show()
 
     return
@@ -1356,6 +1407,7 @@ def plot_magnitude_distribution(table=None,
     if suptitle is not None:
         plt.suptitle(suptitle)
 
+    logger.info('\n')
     plt.show()
 
     return
@@ -1476,6 +1528,7 @@ def plot_cmd_ccd(table=None,
     if suptitle is not None:
         plt.suptitle(suptitle)
 
+    logger.info('\n')
     plt.show()
 
     return
@@ -1636,9 +1689,7 @@ def  plot_hist_psfFlux_S_N(table=None,
     print('Saving:', plotfile)
     plt.savefig(plotfile)
 
-    logging.info('logging')
-    logger.info('logger')
-
+    logger.info('\n')
     plt.show()
 
     return
@@ -1647,11 +1698,12 @@ def  plot_hist_psfFlux_S_N(table=None,
 def plot_hist_redshift(table=None,
                        colname_redshift=None,
                        bins=30, zrange=(0.0, 6.0),
+                       figsize=(8,6),
                        plot_title='',
                        plotfile_prefix=''):
 
 
-    plt.figure(figsize=(10,6))
+    plt.figure(figsize=figsize)
 
     xcolname = colname_redshift
 
@@ -1698,6 +1750,7 @@ def plot_hist_redshift(table=None,
     plt.savefig(plotfile)
 
     #if showplots:
+    logging.info('logging')
     plt.show()
 
 
@@ -1743,7 +1796,7 @@ def plot_hist_redshift(table=None,
     logging.info(f'Saving plotfile: {plotfile}')
     plt.savefig(plotfile)
 
-
+    logger.info('\n')
     plt.show()
 
     return
@@ -1845,7 +1898,7 @@ def desi_plot_hist_redshift(table=None,
     logging.info(f'Saving plotfile: {plotfile}')
     plt.savefig(plotfile)
 
-
+    logger.info('\n')
     plt.show()
 
     return

@@ -638,6 +638,10 @@ if __name__ == "__main__":
     xmatch_checkplots = False
     xmatch_showplots = False
 
+    plotpath = './results_dp1_v1/'
+    if not os.path.exists(plotpath):
+        os.mkdir(plotpath)
+
     infostats = False
 
     run_LRD = False
@@ -751,7 +755,7 @@ if __name__ == "__main__":
 
     lu.count_refband(table=table_lsst)
 
-    lu.explore_refExtendedness(table=table_lsst)
+    lu.explore_extendedness(table=table_lsst, showplot=False)
 
     logger.info(f"{table_lsst.meta['Filename']} {len(table_lsst)}")
 
@@ -928,6 +932,15 @@ if __name__ == "__main__":
     yrange = (15.0, 25.0)
 
     logging.info('\n')
+    lu.explore_extendedness(table=table,
+                            plot_suptitle=plotfile_prefix,
+                            plotfile_prefix=plotfile_prefix,
+                            showplot=True,
+                            plotpath=None)
+
+
+
+    logging.info('\n')
     lu.plot_cmodel_psf(table=table,
                        xrange=xrange,
                        yrange=yrange,
@@ -943,10 +956,6 @@ if __name__ == "__main__":
                        plot_title=plot_title,
                        markersize=markersize,
                        plotfile_prefix=plotfile_prefix)
-
-
-
-
 
 
     lu.plot_redshift_mag(table=table,
