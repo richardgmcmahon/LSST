@@ -32,10 +32,13 @@ filter_linestyles = get_multiband_plot_linestyles()
 field_filters = ['u', 'g', 'r', 'i', 'z', 'y']
 bands = field_filters
 
+magrange = (15.0, 26.0)
 
 logger = logging.getLogger(__name__)
 
 def get_dp1_fieldnames():
+
+    logger.info('\n')
 
     config = configparser.ConfigParser()
 
@@ -66,6 +69,8 @@ def get_dp1_fieldnames():
 
 def read_Milliquas_DP1():
 
+    logger.info('\n')
+
     infile = 'DP1_Fields_Milliquas.fits'
     milliquas = Table.read(infile)
     milliquas.info(['attributes', 'stats'])
@@ -79,11 +84,12 @@ def read_Milliquas_DP1():
 def xmatch_Milliquas(table_lsst=None,
                      table_MQ=None,
                      searchRadius=0.5):
+    logger.info('\n')
 
-     index_lsst = 1
-     index_MQ = 1
+    index_lsst = 1
+    index_MQ = 1
 
-     return index_lsst, index_MQ
+    return index_lsst, index_MQ
 
 
 
@@ -113,7 +119,7 @@ def count_refband(table=None):
 def plot_redshift_mag(table=None,
                       magtype='psfMag',
                       zrange=(0.0, 6.0),
-                      magrange=(16.0, 26.0),
+                      magrange=(15.0, 25.0),
                       markercolor=None,
                       markersize=4.0,
                       colname_redshift='z',
@@ -164,7 +170,7 @@ def plot_redshift_mag(table=None,
 
         xdata= table[xcolname]
         ydata = table[ycolname]
-        print(table[band + '_extendedness'])
+
         itest = (table[band + '_extendedness'] == 0)
         xdata = xdata_save[itest]
         ydata = ydata_save[itest]
@@ -189,6 +195,7 @@ def table_flag_clean(table=None,
                      bandlist=None,
                      band_flaglist=None,
                      flaglist=None):
+    logger.info('\n')
 
     if bandlist is None:
         bandlist = ['u', 'g','r', 'i', 'z', 'y']
@@ -208,6 +215,7 @@ def table_flag_info(table=None,
                     band_flaglist=None,
                     flaglist=None):
 
+    logger.info('\n')
 
     if bandlist is None:
         bandlist = ['u', 'g','r', 'i', 'z', 'y']
@@ -253,6 +261,7 @@ def explore_extendedness(table=None,
     Moments-based measure of whether an object is point-like (0) or extended (1). Reference band.
 
     """
+    logger.info('\n')
 
     plt.close(plt.gcf())
 
@@ -478,11 +487,11 @@ def plot_cmodel_psf(table=None,
 
 
     """
+    # global logger
+    logging.info('Starting ')
 
     debug = True
 
-    # global logger
-    logging.info('Starting ')
 
     plt.figure(figsize=figsize)
 
@@ -722,6 +731,8 @@ def plot_redshift_color(table=None,
                          savefig=True):
     # redshift versus color
 
+    logger.info('\n')
+
     if plot_title is None:
         plot_title = table.meta['Filename']
 
@@ -729,7 +740,7 @@ def plot_redshift_color(table=None,
 
     for iband, band in enumerate(bands[0:5]):
 
-        pt.figure(figsize=figsize)
+        plt.figure(figsize=figsize)
 
         xdata_save = table[xcolname]
 
@@ -742,7 +753,6 @@ def plot_redshift_color(table=None,
         ycolname = mag1 + ' - ' + mag2
         ydata_save = table[mag1] - table[mag2]
         ydata = ydata_save
-
 
         ndata_finite = np.count_nonzero(~np.isnan(ydata))
         print(f'Number of finite y-axis values: {ndata_finite}')
@@ -758,7 +768,6 @@ def plot_redshift_color(table=None,
         plt.plot(xdata, ydata, '.r', label=label,
                  markersize=markersize)
 
-        #print(table[band + '_extendedness'])
         itest = (table[band2 + '_extendedness'] == 0)
         xdata = xdata_save[itest]
         ydata = ydata_save[itest]
@@ -782,7 +791,7 @@ def plot_redshift_color(table=None,
 
 def plot_color_mag(
         table=None,
-        survey=None,
+        survey='LSST',
         band_ref=None,
         band1=None,
         band2=None,
@@ -819,6 +828,8 @@ def plot_color_mag(
 
 
     """
+
+    logger.info('\n')
 
     filename = os.path.basename(table1.meta['Filename'])
     print('plotfile_prefix:', plotfile_prefix)
@@ -978,6 +989,8 @@ def plot_color_magnitude2(table=None,
     2up plot m1 - m2 v m1 and m1 - m2 v m2
 
     """
+
+    logger.info('\n')
 
     # color magnitude
     xdata = table[band1 + '_' + magtype] - table[band2 + '_' + magtype]
@@ -1233,6 +1246,7 @@ def plot_magnitude_distribution(table=None,
     Use cModelMag mags for galaxies and psfMag for stars.
 
     """
+    logger.info('\n')
 
     objtab = table
 
@@ -1429,6 +1443,7 @@ def plot_cmd_ccd(table=None,
 
 
     """
+    logger.info('\n')
 
     help(plt.hexbin)
 
@@ -1546,8 +1561,8 @@ def plot_image_quality():
 
 def stats_column(table=None, colname=None):
 
-
     logger.info('\n')
+
     table[colname].info(['attributes', 'stats'])
     data = table[colname]
 
@@ -1702,6 +1717,7 @@ def plot_hist_redshift(table=None,
                        plot_title='',
                        plotfile_prefix=''):
 
+    logger.info('\n')
 
     plt.figure(figsize=figsize)
 
@@ -1807,6 +1823,7 @@ def desi_plot_hist_redshift(table=None,
                             bins=30, zrange=(0.0, 6.0),
                             plot_title='',
                             plotfile_prefix=''):
+    logger.info('\n')
 
     fig, axes = plt.subplots(1, 2, figsize=(12,6))
 

@@ -646,8 +646,8 @@ if __name__ == "__main__":
 
     run_LRD = False
     run_JWST = False
-    run_Milliquas = False
-    run_DESI_AGNQSO_VAC = True
+    run_Milliquas = True
+    run_DESI_AGNQSO_VAC = False
 
     # move these to explore_dp1
     run_cmodel_psf = False
@@ -912,7 +912,8 @@ if __name__ == "__main__":
     xcolname = colname_redshift
     lu.plot_hist_redshift(table=table,
                           colname_redshift=colname_redshift,
-                          bins=30, zrange=(0.0, 6.0),
+                          bins=30,
+                          zrange=(0.0, 6.0),
                           plot_title=plot_title,
                           plotfile_prefix=plotfile_prefix)
 
@@ -972,3 +973,6 @@ if __name__ == "__main__":
                            colname_redshift=colname_redshift,
                            zrange=zrange,
                            plot_title=plot_title)
+
+
+    lu.plot_color_mag(table=table)
