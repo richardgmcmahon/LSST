@@ -98,14 +98,16 @@ def xmatch_tables(infile1=None,
     infile1 = table1.meta['Filename']
     filename1 = os.path.basename(infile1)
     logging.info(f"Table1: {table1.meta['Filename']}")
+
+    if infostats:
+        table1.info(['attributes', 'stats'])
+        logging.info(f'Elapsed time(secs): {time.time() - t0}\n')
+
     logging.info(f'Number of rows: {len(table1)}')
     logging.info(f'Number of columns: ' +
                  f'{len(table1.colnames)} {len(table1.columns)}')
     logging.info(f'Elapsed time(secs):  {time.time() - t0}\n')
 
-    if infostats:
-        table1.info(['attributes', 'stats'])
-        logging.info(f'Elapsed time(secs): {time.time() - t0}\n')
 
 
     if infile2 is not None and table2 is None:
@@ -349,7 +351,7 @@ def xmatch_tables(infile1=None,
         logging.info(f'Saving xmatch: {outfile}')
 
 
-    # outer join
+    # outer join [not implemented yet]
     print(len(dr), len(idx2))
     itest = (dr > seplimit)
     print(f'itest = (dr > seplimit) range: {np.min(itest)} {np.max(itest)}')
@@ -365,9 +367,8 @@ def xmatch_tables(infile1=None,
     #                 table2[idx2[itest]]])
 
 
-
-
     return result
+
 
     # reverse cross-match
     table_desi = table1
@@ -608,9 +609,67 @@ def mk_mylogger(logfile_prefix=''):
 
 
 
+def rd_table_xmatch(project='sdss_dr19', infostats=True):
+    """
+    Read and process SDSS DR19 cross-match table.
+
+    Args:
+        project (str): Project identifier, defaults to 'sdss_dr19'
+
+    Returns:
+        tuple: (table, colnames_radec, colname_redshift)
+    """
+    import logging
+    from astropy.table import Table
+
+    import fitsio
+    from fitsio import FITS,FITSHDR
+
+    # Configure paths based on project
+    if project == 'sdss_dr19':
+        path = '/data/rgm/SDSS/DR19/'
+        filename = 'allspec-dr19-1.0.1.fits'
+    else:
+        raise ValueError(f"Unsupported project: {project}")
+
+    infile = path + filename
+
+    # Set up logger if not already configured
+    logger = logging.getLogger(__name__)
+
+    logger.info(f'Reading: {infile}')
+
+    columns = ['ra', 'dec', 'sdss_phase']
+    try:
+        # table_xmatch = Table.read(infile)
+        table_xmatch =  Table(fitsio.read(infile, columns=columns, ext=1))
+        # table_xmatch =  Table(fitsio.read(infile, ext=1))
+
+        table_xmatch.meta['Filename'] = infile
+    except FileNotFoundError:
+        logger.error(f"File not found: {infile}")
+        raise
+    except Exception as e:
+        logger.error(f"Error reading file {infile}: {e}")
+        raise
+
+    # Optional info display (you'll need to define infostats somewhere)
+    if infostats:
+        table_xmatch.info(['attributes', 'stats'])
+
+    colnames_radec = ['ra', 'dec']
+    colname_redshift = None
+
+    # Fixed: return table_xmatch instead of undefined 'table'
+    return table_xmatch, colnames_radec, colname_redshift
+
+
+
 
 # do your work here
 if __name__ == "__main__":
+
+    config = configparser.ConfigParser()
 
     #plt.figure(figsize=(10,5))
 
@@ -648,6 +707,7 @@ if __name__ == "__main__":
     run_JWST = False
     run_Milliquas = True
     run_DESI_AGNQSO_VAC = False
+    run_SDSS_ALLSPEC = True
 
     # move these to explore_dp1
     run_cmodel_psf = False
@@ -657,7 +717,13 @@ if __name__ == "__main__":
     zrange = (0.0, 6.0)
     zmin_list = 4.0
 
-    config = configparser.ConfigParser()
+    if run_SDSS_ALLSPEC:
+        table_xmatch, colnames_radec_xmatch, colname_redshift = \
+            rd_table_xmatch(project='sdss_dr19')
+
+        sys.exit()
+
+
     if run_Milliquas:
         configfile = 'Milliquas.cfg'
         logger.info('Read configfile: ' + configfile)
@@ -694,11 +760,10 @@ if __name__ == "__main__":
 
         # if infostats:
         table_xmatch.info()
+        table1 = table_xmatch
 
         colnames_radec_xmatch = ['TARGET_RA', 'TARGET_DEC']
         colname_redshift = 'Z'
-
-        table1 = table_xmatch
         colnames_radec_table1 = colnames_radec_xmatch
 
 
@@ -727,17 +792,21 @@ if __name__ == "__main__":
         table_xmatch = table
 
 
+
+
+
     inpath_lsst = './'
     # filename_lsst = 'dp1_Object_ecdfs.fits'
     # filename_lsst = 'DP1_ECDFS_Object.fits'
     # filename_lsst = 'objtab_dp1_EDFS.fits'
     # filename_lsst = 'objtab_dp1_LELF.fits'
     filename_lsst = 'DP1_ObjectThin.fits'
-
+    filename = 'DP1_Fields.fits'
 
 
     infile_lsst = inpath_lsst + filename_lsst
     colnames_radec_lsst = ['coord_ra', 'coord_dec']
+    colnames_radec_lsst = ['RAJ2000', 'DEJ2000']
 
     logging.info(f'Reading infile1: {infile_lsst}')
     table_lsst = Table.read(infile_lsst)
@@ -816,6 +885,8 @@ if __name__ == "__main__":
         xmatch_AN = True
         xmatch_multimatch = True
 
+
+    logging.info('\n')
     print('Now do the xmatch')
     input('Enter any key to continue... ')
 
@@ -873,33 +944,35 @@ if __name__ == "__main__":
 
     logging.info(f'{type(table)}')
     logging.info(f'{len(table)}')
+    logging.info(f'table filename: {table.meta["Filename"]}')
 
 
     # plot_title = 'dp1_Object_ecdfs.fits x Milliquas'
     # plot redshift histogram
 
+    logging.info(f'colname_redshift: {colname_redshift}')
     xcolname = colname_redshift
-    xdata= table[xcolname]
+    xdata= table_xmatch[xcolname]
 
     itest_zgte = (xdata >= zmin_list)
-    print(f'Number with z>= {zmin_list}; {len(table[itest_zgte])}')
+    print(f'Number with z>= {zmin_list}; {len(table_xmatch[itest_zgte])}')
     if show_table_in_browser_jsviewer:
-        table[itest_zgte].show_in_browser(jsviewer=True)
+        table_xmatch[itest_zgte].show_in_browser(jsviewer=True)
     input('Enter any key to continue... ')
 
     for itest, test_z in enumerate(itest_zgte):
         if test_z:
             print()
             print(test_z, xdata[itest])
-            print(test_z, table[itest])
-            print(test_z, table['coord_ra'][itest])
-            print(test_z, table['coord_dec'][itest])
+            print(test_z, table_xmatch[itest])
+            print(test_z, table_xmatch['coord_ra'][itest])
+            print(test_z, table_xmatch['coord_dec'][itest])
             url_ls = astrolinks.mk_link_LS(
-                RA=table['coord_ra'][itest],
-                Dec=table['coord_dec'][itest], DR='dr10')
+                RA=table_xmatch['coord_ra'][itest],
+                Dec=table_xmatch['coord_dec'][itest], DR='dr10')
             print(f'Legacy Survey viewer link: {url_ls}')
 
-    print(f'Number with z>= {zmin_list}: {len(table[itest_zgte])}')
+    print(f'Number with z>= {zmin_list}: {len(table_xmatch[itest_zgte])}')
     logger.info('')
     input('Enter any key to continue... ')
 

@@ -14,6 +14,11 @@ import configparser
 import numpy as np
 import matplotlib.pyplot as plt
 
+from astropy.coordinates import SkyCoord
+import astropy.units as u
+from astropy.table import Table, join_skycoord, join
+
+
 import TempleModels
 
 from TempleModels import *
@@ -28,6 +33,8 @@ from lsst.utils.plotting import (get_multiband_plot_colors,
 filter_colors = get_multiband_plot_colors()
 filter_symbols = get_multiband_plot_symbols()
 filter_linestyles = get_multiband_plot_linestyles()
+
+dp1_FieldRadius = 1.0 # degree
 
 field_filters = ['u', 'g', 'r', 'i', 'z', 'y']
 bands = field_filters
@@ -1559,15 +1566,26 @@ def plot_image_quality():
 
 
 
-def stats_column(table=None, colname=None):
+def explore_column(data=None,
+                   table=None,
+                   colname=None):
+    """ see also table_stats
 
+    a column is specified as data or a table; could add pandas option
+
+    """
+    logger = logging
     logger.info('\n')
 
-    table[colname].info(['attributes', 'stats'])
-    data = table[colname]
+    if table is not None:
+        table[colname].info(['attributes', 'stats'])
+        data = table[colname]
+        print(f'colname: {colname}')
+        logger.info(f'colname: {colname}')
 
+    print(type(data))
     is_masked = np.ma.is_masked(data)
-    print(f'is_masked: {is_masked}')
+    print(f'Data is_masked: {is_masked}')
 
     if is_masked:
         data_masked = data[data.mask]
@@ -1575,13 +1593,11 @@ def stats_column(table=None, colname=None):
         print('Number of rows; all, unmasked, masked: ' +
           f'{len(data)} {len(data_unmasked)} {len(data_masked)}')
 
-    print(type(data))
     print(f'data[0, -1]: {data[0]} {data[-1]}')
 
     ndata_finite = np.count_nonzero(np.isfinite(data))
     print(f'Number of finite values: {ndata_finite}')
 
-    print()
     itest_isnan  = np.isnan(data)
     print('Number of NaN values:', len(data[itest_isnan]))
     itest_isinf  = np.isinf(data)
@@ -1622,6 +1638,11 @@ def stats_column(table=None, colname=None):
           f'{np.ma.median(data)} ' +
           f'{len(data)}')
 
+
+    unique, unique_counts = \
+        np.unique(data, return_counts=True)
+    total_counts = np.sum(unique_counts)
+    print(f'Maximum unique counts: {np.max(unique_counts)}')
 
     return
 
@@ -1921,6 +1942,60 @@ def desi_plot_hist_redshift(table=None,
     return
 
 
+def get_radec_limits(table=None,
+                     colnames_radec=None):
+
+    import numpy as np
+
+    ra_limits = (np.min(table[colnames_radec[0]]),
+                 np.max(table[colnames_radec[0]]))
+
+    dec_limits = (np.min(table[colnames_radec[1]]),
+                 np.max(table[colnames_radec[1]]))
+
+
+    return ra_limits, dec_limits
+
+
+
+def radec_window(table=None,
+                 colnames_radec=['RAJ2000', 'DEJ2000'],
+                 ra_limits = None, dec_limits = None,
+                 ra_centre = None, dec_centre=None,
+                 window_overlap= 0.01,
+                 radius = None):
+    """ All units are degrees """
+    # add window edge around the RA, Dec limits with Cosine Dec correction
+    # applied to RA limits.
+    # np.cos(np.deg2rad(-60.00)) = 0.50000
+
+    maxabsdec = np.max(np.abs(dec_limits))
+    logging.info(f'Maximum abs(dec): {maxabsdec}')
+    cosdec_correction = 1.0/(np.cos(np.deg2rad(maxabsdec)))
+    logging.info(f'1/Cosine abs(dec): {cosdec_correction}')
+
+    window_ra_limits = [ra_limits[0] - (window_overlap * cosdec_correction),
+                        ra_limits[1] + (window_overlap * cosdec_correction)]
+    window_dec_limits = [dec_limits[0] - window_overlap,
+                         dec_limits[1] + window_overlap]
+
+    print(f'window_ra_limits: {window_ra_limits}')
+    print(f'window_dec_limits: {window_dec_limits}')
+
+    ra_test = table[colnames_radec[0]]
+    dec_test = table[colnames_radec[1]]
+    itest = ((ra_test >= window_ra_limits[0]) &
+             (ra_test <= window_ra_limits[1]) &
+             (dec_test >= window_dec_limits[0]) &
+             (dec_test <= window_dec_limits[1]))
+
+    table_windowed = table[itest]
+
+    return table_windowed
+
+
+
+
 # do some tests here
 if __name__ == "__main__":
 
@@ -1990,3 +2065,30 @@ if __name__ == "__main__":
                        plot_colorrangex=plot_colorrangex,
                        plot_colorrangey=plot_colorrangey)
     #                   showplots=showplots)
+
+
+
+
+def rd_table(infile=None, infostats=True):
+    """
+    read in a table and add metadata
+
+    """
+    print(f'Reading: {infile}')
+    table = Table.read(infile)
+    table.meta['Filename'] = infile
+    logger.info(f'Table read in: {infile}')
+
+    logger.info(f"Table: {table.meta['Filename']}")
+
+    if infostats:
+        table.info(['attributes', 'stats'])
+        # logger.info(f'Elapsed time(secs): {time.time() - t0}\n')
+        logger.info('\n')
+
+    logger.info(f'Number of rows: {len(table)}')
+    logger.info(f'Number of columns: ' +
+                 f'{len(table.colnames)} {len(table.columns)}')
+    # logger.info(f'Elapsed time(secs):  {time.time() - t0}\n')
+
+    return table
