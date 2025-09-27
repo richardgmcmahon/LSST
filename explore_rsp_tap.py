@@ -159,6 +159,36 @@ def main():
         print(itable, table['description'])
         print()
 
+    schema_name = None
+    if args.service == 'US':
+        schema_name = 'DP1'
+
+    if args.service == 'UK':
+        schema_name = 'VIKING'
+
+    if args.service == 'VSA':
+        schema_name = 'VIKINGDR4' # ['VHSDR6', 'VIDEODR5', 'VVVDR5']
+
+    if args.service == 'WSA':
+        schema_name = 'UKIDSSDR11PLUS' # ['UHSDR2', 'UHSDR3']
+        schema_name = 'UHSDR2' # ['UHSDR2', 'UHSDR3']
+        schema_name = 'UHSDR3' # ['UHSDR2', 'UHSDR3']
+
+    query = f"SELECT * FROM tap_schema.tables WHERE schema_name = '{schema_name}'"
+
+    result = run_Query(service=service, query=query)
+    print()
+    for irow, row in enumerate(result):
+        print(irow, row['table_name'])
+
+    sys.exit()
+
+    for itable, table in enumerate(tables):
+        print(itable, table['table_type'], table['table_name'])
+        print(itable, table['description'])
+        print()
+
+
     print('List just DP1 tables')
     input('Enter any key to continue... ')
     for itable, table in enumerate(tables):
