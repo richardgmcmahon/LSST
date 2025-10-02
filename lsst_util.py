@@ -2082,6 +2082,11 @@ if __name__ == "__main__":
     if githash_value is None:
         print("No git hash available")
 
+    githash_value = print_git_hash(short_hash=False)
+    if githash_value is None:
+        print("No git hash available")
+
+
     # define debug
     #debug = locals().get('debug', False)
     #print('debug: ', debug)
