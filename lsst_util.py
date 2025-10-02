@@ -2041,10 +2041,50 @@ def rd_table(infile=None, infostats=True):
     return table
 
 
+import subprocess
+
+def print_git_hash(short_hash=True):
+    """
+    Read and print the current git commit hash.
+
+    Returns:
+        str: The git commit hash, or None if not in a git repository
+
+    If you want just the short hash (first 7 characters), you can change the git command to ['git', 'rev-parse', '--short', 'HEAD']
+    """
+
+    if short_hash:
+        command = ['git', 'rev-parse', '--short', 'HEAD']
+
+    if not short_hash:
+        command = ['git', 'rev-parse', 'HEAD']
+    try:
+        # Run git command to get the current commit hash
+        result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=True)
+
+        git_hash = result.stdout.strip()
+        print(f"Git Hash: {git_hash}")
+        return git_hash
+
+    except (subprocess.CalledProcessError, FileNotFoundError):
+        # Silently return None if not in a git repo or git not installed
+        return None
+
+
+
 
 
 # do some tests here
 if __name__ == "__main__":
+
+    githash_value = print_git_hash()
+    if githash_value is None:
+        print("No git hash available")
+
 
     debug = locals().get('debug', False)
     print('debug: ', debug)
