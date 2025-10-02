@@ -4,7 +4,6 @@ https://sdm-schemas.lsst.io/dp1.html
 
 """
 
-
 import os
 import sys
 import time
@@ -18,10 +17,10 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.table import Table, join_skycoord, join
 
+global DEBUG
 
-import TempleModels
-
-from TempleModels import *
+import TempleModels as tm
+#from TempleModels import * as tm
 # help(TempleModels)
 
 # help(TempleModels.plot_ugr)
@@ -42,6 +41,19 @@ bands = field_filters
 magrange = (15.0, 26.0)
 
 logger = logging.getLogger(__name__)
+
+
+import argparse
+
+def parse_arguments():
+    """Parse command line arguments."""
+    parser = argparse.ArgumentParser(description='lsst utilities')
+    parser.add_argument('-d' , '--debug',
+                        action='store_true',
+                        help='Enable debug mode')
+    args = parser.parse_args()
+    return args
+
 
 def get_dp1_fieldnames():
 
@@ -1063,6 +1075,8 @@ def plot_color_color(
         colname_xband2=None,
         colname_yband1=None,
         colname_yband2=None,
+        colormagsx = None,
+        colormagsy = None,
         xlabel='',
         ylabel='',
         xrange=(-2.5, 5.0),
@@ -1450,9 +1464,17 @@ def plot_cmd_ccd(table=None,
 
 
     """
+    import sys
+
     logger.info('\n')
 
-    help(plt.hexbin)
+
+    debug = locals().get('debug', False)
+    if debug:
+        try:
+            help(plt.hexbin)
+        except Exception as e:
+            print(f"Warning: {e}")
 
     bins = hexbins
     if hexbins is not None:
@@ -1994,27 +2016,64 @@ def radec_window(table=None,
     return table_windowed
 
 
+def rd_table(infile=None, infostats=True):
+    """
+    read in a table and add metadata
+
+    """
+    print(f'Reading: {infile}')
+    table = Table.read(infile)
+    table.meta['Filename'] = infile
+    logger.info(f'Table read in: {infile}')
+
+    logger.info(f"Table: {table.meta['Filename']}")
+
+    if infostats:
+        table.info(['attributes', 'stats'])
+        # logger.info(f'Elapsed time(secs): {time.time() - t0}\n')
+        logger.info('\n')
+
+    logger.info(f'Number of rows: {len(table)}')
+    logger.info(f'Number of columns: ' +
+                 f'{len(table.colnames)} {len(table.columns)}')
+    # logger.info(f'Elapsed time(secs):  {time.time() - t0}\n')
+
+    return table
+
+
 
 
 # do some tests here
 if __name__ == "__main__":
 
-    # read the Temple models
-    import TempleModels
-    help(TempleModels)
+    debug = locals().get('debug', False)
+    print('debug: ', debug)
 
-    import os
-    import sys
-    import time
+    args = parse_arguments()
+
+    DEBUG = False
+    if args.debug:
+        DEBUG = True
+        print(f"Debug mode is ON")
 
 
     fieldnames = get_dp1_fieldnames()
     print(f'fieldnames: {fieldnames}')
 
 
+    test_TempleModels = locals().get('debug', False)
+    if test_TempleModels:
+        # read the Temple models
+        import TempleModels
+        if debug:
+            help(TempleModels)
+
+
+
+
     showplots = True
 
-    templemodels_dict = get_colors_nested_dict()
+    templemodels_dict = tm.get_colors_nested_dict()
 
     print()
     print(type(templemodels_dict))
@@ -2058,37 +2117,13 @@ if __name__ == "__main__":
     colormagsy = ['g', 'r']
     plot_colorrangex = (-1.5, 5.0)
     plot_colorrangey = (-1.5, 5.0)
-    plot_color_color(templemodels_dict=templemodels_dict,
+
+    """
+    tm.plot_color_color(templemodels_dict=templemodels_dict,
                        colormagsy=colormagsy,
                        absmaglist=
                        ['M20', 'M22', 'M24', 'M26', 'M28'],
                        plot_colorrangex=plot_colorrangex,
                        plot_colorrangey=plot_colorrangey)
     #                   showplots=showplots)
-
-
-
-
-def rd_table(infile=None, infostats=True):
     """
-    read in a table and add metadata
-
-    """
-    print(f'Reading: {infile}')
-    table = Table.read(infile)
-    table.meta['Filename'] = infile
-    logger.info(f'Table read in: {infile}')
-
-    logger.info(f"Table: {table.meta['Filename']}")
-
-    if infostats:
-        table.info(['attributes', 'stats'])
-        # logger.info(f'Elapsed time(secs): {time.time() - t0}\n')
-        logger.info('\n')
-
-    logger.info(f'Number of rows: {len(table)}')
-    logger.info(f'Number of columns: ' +
-                 f'{len(table.colnames)} {len(table.columns)}')
-    # logger.info(f'Elapsed time(secs):  {time.time() - t0}\n')
-
-    return table
