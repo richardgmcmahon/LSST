@@ -2075,9 +2075,6 @@ def print_git_hash(short_hash=True):
         return None
 
 
-
-
-
 # do some tests here
 if __name__ == "__main__":
 
@@ -2085,17 +2082,23 @@ if __name__ == "__main__":
     if githash_value is None:
         print("No git hash available")
 
-
-    debug = locals().get('debug', False)
-    print('debug: ', debug)
+    # define debug
+    #debug = locals().get('debug', False)
+    #print('debug: ', debug)
 
     args = parse_arguments()
 
+    # define debug and DEBUG
     DEBUG = False
+    debug = DEBUG
     if args.debug:
         DEBUG = True
         print(f"Debug mode is ON")
 
+    # both for backward compatibility
+
+    showplot = True
+    showplots = showplot
 
     fieldnames = get_dp1_fieldnames()
     print(f'fieldnames: {fieldnames}')
@@ -2110,60 +2113,57 @@ if __name__ == "__main__":
 
 
 
+        templemodels_dict = tm.get_colors_nested_dict()
 
-    showplots = True
+        print()
+        print(type(templemodels_dict))
+        print(type(templemodels_dict['colors_M20_dict']))
 
-    templemodels_dict = tm.get_colors_nested_dict()
+        colors_list= list(templemodels_dict.keys())
+        print(colors_list)
 
-    print()
-    print(type(templemodels_dict))
-    print(type(templemodels_dict['colors_M20_dict']))
-
-    colors_list= list(templemodels_dict.keys())
-    print(colors_list)
-
-    for ikey, key in enumerate(templemodels_dict.keys()):
-        print(ikey, key)
+        for ikey, key in enumerate(templemodels_dict.keys()):
+            print(ikey, key)
 
 
-    print()
-    print(f'showplots: {showplots}')
-    print()
+        print()
+        print(f'showplots: {showplots}')
+        print()
 
 
-    colorcolorList = (['uggr', 'g', 'r', 'u', 'g', -1.5, 5.0, -1.5, 5.0],
-                        ['uggr', 'u', 'g', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
-                        ['grri', 'r', 'i', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
-                        ['grri', 'g', 'r', 'r', 'i', -1.5, 5.0, -1.5, 5.0],
-                        ['grrz', 'r', 'z', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
-                        ['grrz', 'g', 'r', 'r', 'z', -1.5, 5.0, -1.5, 5.0],
-                        ['giiz', 'i', 'z', 'g', 'i', -1.5, 5.0, -1.5, 5.0],
-                        ['giiz', 'g', 'i', 'i', 'z', -1.5, 5.0, -1.5, 5.0],
-                        ['riiz', 'i', 'z', 'r', 'i', -1.5, 5.0, -1.5, 5.0],
-                        ['izzY', 'z', 'Y', 'i', 'z', -1.5, 5.0, -1.5, 5.0],
-                        ['zYYJ', 'Y', 'J', 'z', 'Y', -1.5, 5.0, -1.5, 5.0],
-                        ['rzzW1', 'z', 'W1', 'r', 'z', -1.5, 5.0, -1.5, 5.0],
-                        ['gzzW1', 'z', 'W1', 'g', 'z', -1.5, 5.0, -1.5, 5.0],
-                        ['giW1W2', 'W1', 'W2', 'g', 'i',
-                         -1.0, 2.0, -1.5, 5.0],
-                        ['zW1W1W2', 'W1', 'W2', 'z', 'W1',
-                         -1.0, 2.0, -1.5, 5.0])
+        colorcolorList = (['uggr', 'g', 'r', 'u', 'g', -1.5, 5.0, -1.5, 5.0],
+                            ['uggr', 'u', 'g', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
+                            ['grri', 'r', 'i', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
+                            ['grri', 'g', 'r', 'r', 'i', -1.5, 5.0, -1.5, 5.0],
+                            ['grrz', 'r', 'z', 'g', 'r', -1.5, 5.0, -1.5, 5.0],
+                            ['grrz', 'g', 'r', 'r', 'z', -1.5, 5.0, -1.5, 5.0],
+                            ['giiz', 'i', 'z', 'g', 'i', -1.5, 5.0, -1.5, 5.0],
+                            ['giiz', 'g', 'i', 'i', 'z', -1.5, 5.0, -1.5, 5.0],
+                            ['riiz', 'i', 'z', 'r', 'i', -1.5, 5.0, -1.5, 5.0],
+                            ['izzY', 'z', 'Y', 'i', 'z', -1.5, 5.0, -1.5, 5.0],
+                            ['zYYJ', 'Y', 'J', 'z', 'Y', -1.5, 5.0, -1.5, 5.0],
+                            ['rzzW1', 'z', 'W1', 'r', 'z', -1.5, 5.0, -1.5, 5.0],
+                            ['gzzW1', 'z', 'W1', 'g', 'z', -1.5, 5.0, -1.5, 5.0],
+                            ['giW1W2', 'W1', 'W2', 'g', 'i',
+                             -1.0, 2.0, -1.5, 5.0],
+                            ['zW1W1W2', 'W1', 'W2', 'z', 'W1',
+                             -1.0, 2.0, -1.5, 5.0])
 
 
-    plot_redshiftrange = [0.0, 7.0]
-    print(f'plot_redshiftrange: {plot_redshiftrange}')
+        plot_redshiftrange = [0.0, 7.0]
+        print(f'plot_redshiftrange: {plot_redshiftrange}')
 
-    colormagsx = ['u', 'g']
-    colormagsy = ['g', 'r']
-    plot_colorrangex = (-1.5, 5.0)
-    plot_colorrangey = (-1.5, 5.0)
+        colormagsx = ['u', 'g']
+        colormagsy = ['g', 'r']
+        plot_colorrangex = (-1.5, 5.0)
+        plot_colorrangey = (-1.5, 5.0)
 
-    """
-    tm.plot_color_color(templemodels_dict=templemodels_dict,
-                       colormagsy=colormagsy,
-                       absmaglist=
-                       ['M20', 'M22', 'M24', 'M26', 'M28'],
-                       plot_colorrangex=plot_colorrangex,
-                       plot_colorrangey=plot_colorrangey)
-    #                   showplots=showplots)
-    """
+        """
+        tm.plot_color_color(templemodels_dict=templemodels_dict,
+                           colormagsy=colormagsy,
+                           absmaglist=
+                           ['M20', 'M22', 'M24', 'M26', 'M28'],
+                           plot_colorrangex=plot_colorrangex,
+                           plot_colorrangey=plot_colorrangey)
+        #                   showplots=showplots)
+        """
