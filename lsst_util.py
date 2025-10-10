@@ -1591,9 +1591,41 @@ def plot_image_quality():
 def explore_column(data=None,
                    table=None,
                    colname=None):
-    """ see also table_stats
+    """
+    Explore and print statistics about a column of data, either directly
+    as an array or as a column in a table.
 
-    a column is specified as data or a table; could add pandas option
+    TODO: add support for Pandas Dataframe
+
+    Parameters
+    ----------
+    data : array-like, optional
+        The data array to analyze. This can be a NumPy array, masked array,
+        or similar. If provided, column statistics and diagnostics will be
+        computed directly from this array.
+
+    table : table-like, optional
+        A table structure (such as an Astropy Table, pandas DataFrame, etc.)
+        that contains columns. If provided along with `colname`,
+        the specified column will be extracted and analyzed.
+
+    colname : str, optional
+        The name of the column to analyze. This is used if `table` is
+        provided and indicates which column to extract and analyze.
+
+    Notes
+    -----
+    - If both `data` and `table` are provided, `table[colname]`
+    takes precedence.
+    - Designed for exploratory data analysis and will print information
+    and statistics about the input column, including masked and finite values.
+    - This function is primarily intended for interactive use and prints
+    information rather than returning results.
+
+    See Also
+    --------
+    my table_stats function
+
 
     """
 
@@ -1602,6 +1634,10 @@ def explore_column(data=None,
 
     if table is not None:
         print(type(table))
+
+    if colname is not None:
+        print(f'type(colname) {colname}')
+
 
     logger = logging
     logger.info('\n')
