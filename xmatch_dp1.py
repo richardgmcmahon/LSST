@@ -479,6 +479,31 @@ def xmatch_tables(infile1=None,
 
 def get_radec_limits(table=None,
                      colnames_radec=None):
+    """Compute RA and Dec limits from an astronomical catalog.
+    
+    Calculates the minimum and maximum Right Ascension and Declination
+    values in a source catalog.
+    
+    Parameters
+    ----------
+    table : astropy.table.Table
+        Catalog table containing RA and Dec columns.
+    colnames_radec : list of str
+        Two-element list with names of RA and Dec columns,
+        e.g., ['RAJ2000', 'DECJ2000'] or ['coord_ra', 'coord_dec'].
+    
+    Returns
+    -------
+    ra_limits : tuple of float
+        (min_ra, max_ra) in degrees.
+    dec_limits : tuple of float
+        (min_dec, max_dec) in degrees.
+    
+    Notes
+    -----
+    Does not account for RA wrapping at 0/360 degrees.
+    Use with caution near the celestial poles or RA=0.
+    """
 
     import numpy as np
 
@@ -533,6 +558,33 @@ def radec_window(table=None,
 def explore_all(table=None, plot_title=None,
                 plotfile_prefix=None,
                 markersize=4.0):
+    """Generate comprehensive diagnostic plots for LSST Object catalog.
+    
+    Creates multiple diagnostic plots comparing PSF and CModel magnitudes
+    with different extendedness classifications.
+    
+    Parameters
+    ----------
+    table : astropy.table.Table
+        LSST Object catalog with photometric measurements.
+    plot_title : str, optional
+        Title for the plots.
+    plotfile_prefix : str, optional
+        Prefix for saved plot filenames.
+    markersize : float, optional
+        Size of plot markers in points. Default is 4.0.
+    
+    Returns
+    -------
+    None
+        Generates and optionally saves plots to disk.
+    
+    Notes
+    -----
+    Calls plot_cmodel_psf from lsst_util module to generate
+    color-magnitude diagrams comparing PSF vs CModel photometry
+    for point sources and extended sources.
+    """
 
     xrange = (-0.5, 1.0)
     yrange = (23.0, 14.0)
@@ -556,8 +608,23 @@ def explore_all(table=None, plot_title=None,
 
 
 def getargs():
-    """
-
+    """Parse command line arguments (placeholder).
+    
+    Placeholder function for command line argument parsing.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    args : argparse.Namespace
+        Parsed command line arguments.
+    
+    Notes
+    -----
+    This function is incomplete and needs implementation
+    using argparse to define expected arguments.
     """
 
     argfs = ""
@@ -566,6 +633,30 @@ def getargs():
 
 
 def mk_mylogger(logfile_prefix=''):
+    """Create and configure a logger for the application.
+    
+    Sets up Python logging with both file and console output handlers.
+    
+    Parameters
+    ----------
+    logfile_prefix : str, optional
+        Prefix for the log filename. Full filename will be
+        prefix + timestamp + '.log'. Default is empty string.
+    
+    Returns
+    -------
+    logging.Logger
+        Configured logger instance ready for use.
+    
+    Notes
+    -----
+    Creates a log file with format:
+    YYMMDDTHHMM.log containing timestamped log messages.
+    
+    Both file and console handlers are set to INFO level.
+    Messages include timestamp, module name, function name,
+    line number, and log level.
+    """
 
     import sys
     import getpass

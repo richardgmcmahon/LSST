@@ -133,9 +133,39 @@ def connect_rsp_tap(verbose=True):
 
 
 def run_async_query(service=None, query=None):
-    """
-
-
+    """Execute an asynchronous ADQL query against a TAP service.
+    
+    Submits an ADQL query as an asynchronous job, waits for completion,
+    and retrieves the results.
+    
+    Parameters
+    ----------
+    service : pyvo.dal.TAPService
+        TAP service object to execute the query against.
+    query : str
+        ADQL query string to execute.
+    
+    Returns
+    -------
+    astropy.table.Table
+        Query results as an astropy Table with statistics displayed.
+    
+    Raises
+    ------
+    AssertionError
+        If the job phase is not 'COMPLETED' after execution.
+    
+    Notes
+    -----
+    This method is preferred for long-running queries that may exceed
+    synchronous timeout limits. The function polls the job status and
+    waits for completion before fetching results.
+    
+    Examples
+    --------
+    >>> service = get_tap_service('US')
+    >>> query = "SELECT * FROM dp1.Object WHERE tract = 4849"
+    >>> result = run_async_query(service=service, query=query)
     """
     rsp_tap = service
 
@@ -347,9 +377,31 @@ def query_CoaddPatches(top=None):
 
 
 def query_visits():
-    """
-
-
+    """Query LSST visit metadata from DP1 catalog.
+    
+    Retrieves visit-level metadata including visit ID, photometric band,
+    exposure time, and sky position for visits within a specified
+    sky region.
+    
+    Parameters
+    ----------
+    None
+        Uses global variables ra_centre, dec_centre, and radius
+        defined in the module scope.
+    
+    Returns
+    -------
+    astropy.table.Table
+        Table of visit metadata with columns:
+        - visit: Visit identifier
+        - band: Photometric filter (u, g, r, i, z, y)
+        - expMidptMJD: Mid-exposure time in Modified Julian Date
+        - expMidpt: Mid-exposure timestamp
+    
+    Notes
+    -----
+    Requires active connection to LSST RSP TAP service (rsp_tap global).
+    Results are ordered by exposure midpoint time.
     """
 
 
@@ -383,7 +435,32 @@ def query_visits():
 
 
 def query_ccdvisits(plotfile_prefix=None):
-    """CcdVisits
+    """Query and plot LSST CCD visit quality metrics.
+    
+    Retrieves CCD-level visit metadata and generates histogram plots
+    of seeing (PSF FWHM) and limiting magnitude distributions.
+    
+    Parameters
+    ----------
+    plotfile_prefix : str, optional
+        Prefix for saved plot filenames. If None, uses default naming.
+    
+    Returns
+    -------
+    None
+        Generates and saves plots to disk, displays them if interactive.
+    
+    Notes
+    -----
+    Creates two plots:
+    1. PSF FWHM (seeing) distribution by filter
+    2. Limiting magnitude distribution by filter
+    
+    Requires global variables: ra_cen, dec_cen, radius, field_filters,
+    filter_colors, filter_linestyles, and rsp_tap service connection.
+    
+    Queries the dp1.CcdVisit table for individual CCD exposures
+    within the specified spatial region.
     """
 
 
@@ -688,6 +765,31 @@ def query_Object(rsp_tab=None):
 
 
 def debug_datalink_url(url):
+    """Debug DataLink URL access and authentication.
+    
+    Attempts to fetch and parse a DataLink VOTable URL, providing
+    diagnostic information about authentication and content.
+    
+    Parameters
+    ----------
+    url : str
+        DataLink service URL to debug.
+    
+    Returns
+    -------
+    pyvo.dal.adhoc.DatalinkResults or None
+        Parsed DataLink results if successful, None if parsing fails.
+    
+    Notes
+    -----
+    This diagnostic function:
+    - Fetches the URL content with authentication
+    - Saves the response to a local XML file for inspection
+    - Prints HTTP status, content type, and response preview
+    - Attempts to parse as VOTable/DataLink format
+    
+    Requires RSP authentication token from ~/.rsp-tap.token file.
+    """
     import requests
 
     homedir = os.path.expanduser('~')
@@ -1024,6 +1126,36 @@ def query_ObsCore():
 
 
 def select_highredshift_galaxies_grz():
+    """Select high-redshift galaxy candidates using g-r-z colors.
+    
+    Applies color selection criteria to identify z~4 Lyman Break
+    Galaxy (LBG) candidates from LSST DP1 Object catalog.
+    
+    Parameters
+    ----------
+    None
+        Uses module-level globals for TAP service, sky region,
+        and field filters.
+    
+    Returns
+    -------
+    None
+        Generates and displays a g-r vs r-z color-color diagram
+        with selection boundaries.
+    
+    Notes
+    -----
+    Selection criteria for z~4 LBG candidates:
+    - (g - r) > 1.5
+    - (g - r) > (r - z) + 1.1
+    - (r - z) < 1.0
+    
+    These criteria exploit the Lyman break feature that shifts
+    into the g-band at z~4, causing a strong g-band dropout.
+    
+    Queries the dp1.Object table for extended sources (galaxies)
+    with cModelMag photometry in ugrizy bands.
+    """
 
     title = 'dp1_ecdfs'
 
@@ -1142,6 +1274,28 @@ def select_highredshift_galaxies_grz_backup():
     return
 
 def explore_objtab():
+    """Explore LSST Object table properties and statistics.
+    
+    Placeholder function for exploring and analyzing properties
+    of LSST Object catalog tables.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    This function needs implementation to analyze:
+    - Column statistics and distributions
+    - Flag statistics
+    - Photometric quality metrics
+    - Object type classifications (stars vs galaxies)
+    - Spatial distributions
+    """
 
 
     return
