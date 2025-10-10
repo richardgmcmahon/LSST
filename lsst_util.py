@@ -1596,6 +1596,13 @@ def explore_column(data=None,
     a column is specified as data or a table; could add pandas option
 
     """
+
+    if data is not None:
+        print(type(data))
+
+    if table is not None:
+        print(type(table))
+
     logger = logging
     logger.info('\n')
 
@@ -1660,11 +1667,11 @@ def explore_column(data=None,
           f'{np.ma.median(data)} ' +
           f'{len(data)}')
 
-
     unique, unique_counts = \
         np.unique(data, return_counts=True)
     total_counts = np.sum(unique_counts)
     print(f'Maximum unique counts: {np.max(unique_counts)}')
+
 
     return
 

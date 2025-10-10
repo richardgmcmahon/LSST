@@ -1151,16 +1151,21 @@ def explore_objtab():
 def select_highredshift_quasars(mode='sync',
                                 top=None,
                                 allfields=False,
+                                tract=4849,
+                                patchs=None,
+                                patch=None,
+                                allcolumns=True,
                                 thintable=False):
     """
     fieldname?
 
+    https://sdm-schemas.lsst.io/dp1.html#Object
+
+    e.g.
     SELECT COUNT(*) FROM dp1.Object
     2299757 rows
 
     """
-
-    thintable = True
 
     logger.info('')
     logging.info('')
@@ -1169,7 +1174,7 @@ def select_highredshift_quasars(mode='sync',
 
     all = True
     allfields = True
-    print('filters:', field_filters)
+    logger.info(f'filters: {field_filters}')
 
     query_lines = ["SELECT "]
     if top is not None:
@@ -1233,14 +1238,33 @@ def select_highredshift_quasars(mode='sync',
     query_lines.append(f"       deblend_skipped ")
     query_lines.append("FROM dp1.Object ")
 
-    if fieldname != 'All':
+    if fieldname != 'All' and tract is None:
         query_lines.append(
             f"WHERE CONTAINS(POINT('ICRS', coord_ra, coord_dec), "
             f"CIRCLE('ICRS', {ra_centre}, {dec_centre}, {radius})) = 1 "
         )
+
+    if tract is not None and patch is not None:
+        query_lines.append(
+            f"WHERE tract = {tract} and patch = {patch}")
+
+    if tract is not None and patch is None:
+        query_lines.append(
+            f"WHERE tract = {tract}")
+
+
     query_lines.append("ORDER BY objectId ASC")
 
+
     query = "\n".join(query_lines)
+
+    #hits the 1000 column limit!
+    #query_all = """SELECT *
+    #FROM dp1.Object
+    #WHERE tract = 5063 and patch = 25
+    #ORDER BY objectId ASC
+    #"""
+    #query = query_all
 
     print(query)
     print()
@@ -1265,16 +1289,17 @@ def select_highredshift_quasars(mode='sync',
     # result.info(['attributes', 'stats'])
 
 
+    outfile = 'DP1_' + fieldname + '_Object_tmp.fits'
     if thintable:
         outfile = 'DP1_' + fieldname + '_ObjectThin_tmp.fits'
 
-        print(f'Saving: {outfile}')
-        print('Elapsed time(secs): ',time.time() - t0)
-        result.write(outfile, overwrite=True)
-        print('Elapsed time(secs): ',time.time() - t0)
-
-        return
-
+    nrows = len(result)
+    ncolumns = len(result.columns)
+    print(f'Saving: {outfile} {nrows} rows {ncolumns} columns')
+    print('Elapsed time(secs): ',time.time() - t0)
+    result.write(outfile, overwrite=True)
+    print('Elapsed time(secs): ',time.time() - t0)
+    input('Enter any key to continue... ')
 
     # add some columns
     # refBand_S_N
@@ -1517,12 +1542,14 @@ if __name__ == "__main__":
     config.read(configfile)
     fieldnames = ['47Tuc', 'ECDFS', 'EDFS', 'LELF', 'FDSG']
 
+    fieldname = 'All'
     fieldname = fieldnames[1]
     sectionName = fieldname
 
+    get_summary_info = False
+
     ntop = None
     # ntop = 100000
-    fieldname = 'All'
 
     logger.info(f'Fieldname: {fieldname}')
     radius = 1.0
@@ -1557,24 +1584,28 @@ if __name__ == "__main__":
     print('Elapsed time(secs): ',time.time() - t0, '\n')
 
 
-    get_summary_info = False
+
     if get_summary_info:
 
         t0 = time.time()
         query_Object()
         print('Elapsed time(secs): ',time.time() - t0, '\n')
+        input('Enter any key to continue... ')
 
         t0 = time.time()
         query_CoaddPatches()
         print('Elapsed time(secs): ',time.time() - t0, '\n')
+        input('Enter any key to continue... ')
 
         t0 = time.time()
         query_schema(rsp_tap=rsp_tap)
         print('Elapsed time(secs): ',time.time() - t0, '\n')
+        input('Enter any key to continue... ')
 
         t0 = time.time()
         query_visits()
         print('Elapsed time(secs): ',time.time() - t0, '\n')
+        input('Enter any key to continue... ')
 
 
     # results= rsp_tap.run_sync(query)
