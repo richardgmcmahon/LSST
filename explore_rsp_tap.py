@@ -381,13 +381,46 @@ def test_cds():
 
 
 def get_tap_service(service_name=None):
-    """
-
-    RSP US or UK
-    VSA or WSA
-    CDS ?
-    your choice here
-
+    """Connect to a TAP (Table Access Protocol) service.
+    
+    Establishes a connection to various astronomical TAP services including
+    LSST RSP (Rubin Science Platform), VSA/WSA (VISTA/WFCAM Science Archives),
+    and other VO-compliant services.
+    
+    Parameters
+    ----------
+    service_name : str, optional
+        Name of the TAP service to connect to. Valid options are:
+        'US' - LSST RSP US (data.lsst.cloud)
+        'UK' - LSST RSP UK (rsp.lsst.ac.uk)
+        'VSA' - VISTA Science Archive
+        'WSA' - WFCAM Science Archive
+        'ESO' - ESO Archive
+        'IRSA' - IRSA Archive
+        'CDS' - CDS/VizieR Archive
+        'NED' - NED Archive
+        Default is None.
+    
+    Returns
+    -------
+    pyvo.dal.TAPService
+        A TAP service object that can be used to execute ADQL queries.
+    
+    Raises
+    ------
+    ValueError
+        If service_name is not one of the supported services.
+    
+    Notes
+    -----
+    For RSP services (US/UK), authentication tokens are read from
+    ~/.rsp-tap.token or ~/.rsp_uk-tap.token files respectively.
+    
+    Examples
+    --------
+    >>> service = get_tap_service('US')
+    >>> # Run a query
+    >>> result = service.run_sync("SELECT TOP 10 * FROM dp1.Object")
     """
 
     # Dictionary mapping service names to service URLs
@@ -453,9 +486,25 @@ def get_tap_service(service_name=None):
 
 
 def get_service_info(service=None):
-    """
-
-
+    """Get and print information about a TAP service.
+    
+    Queries and displays metadata about a TAP service including maximum
+    record limits, service description, examples, and capabilities.
+    
+    Parameters
+    ----------
+    service : pyvo.dal.TAPService
+        A TAP service object from which to retrieve information.
+    
+    Returns
+    -------
+    None
+        Prints service information to stdout.
+    
+    Notes
+    -----
+    Some services may not expose all information (e.g., maxrec, hardlimit).
+    These attributes are queried with exception handling to avoid failures.
     """
     t0 = time.time()
 
@@ -516,6 +565,34 @@ def get_service_info(service=None):
 
 
 def run_Query(service=None, query=None):
+    """Execute a synchronous ADQL query against a TAP service.
+    
+    Runs an ADQL query synchronously and returns the results as an astropy
+    Table with statistics displayed.
+    
+    Parameters
+    ----------
+    service : pyvo.dal.TAPService
+        TAP service object to execute the query against.
+    query : str
+        ADQL query string to execute.
+    
+    Returns
+    -------
+    pyvo.dal.TAPResults
+        Query results object that can be converted to an astropy Table.
+    
+    Notes
+    -----
+    This function prints the query and table information to stdout as
+    part of its execution.
+    
+    Examples
+    --------
+    >>> service = get_tap_service('US')
+    >>> query = "SELECT TOP 10 * FROM dp1.Object"
+    >>> result = run_Query(service=service, query=query)
+    """
 
     print()
     print(f'query: {query}')
@@ -678,6 +755,37 @@ def make_query_region(table_name=None,
 
 
 def explore_rsp(service=None):
+    """Explore LSST DP1 tables via TAP service.
+    
+    Queries and reports row counts for all major DP1 (Data Preview 1)
+    tables in the LSST Rubin Science Platform.
+    
+    Parameters
+    ----------
+    service : pyvo.dal.TAPService
+        TAP service object connected to LSST RSP.
+    
+    Returns
+    -------
+    None
+        Prints table row counts and timing information.
+    
+    Notes
+    -----
+    Queries the following DP1 tables:
+    - CcdVisit: Individual CCD visit metadata
+    - CoaddPatches: Coadded patch information
+    - DiaObject: Difference imaging objects
+    - DiaSource: Difference imaging sources
+    - ForcedSource: Forced photometry measurements
+    - ForcedSourceOnDiaObject: Forced photometry on DiaObjects
+    - MPCORB: Minor planet orbital elements
+    - Object: Object catalog
+    - Source: Source measurements
+    - SSObject: Solar system objects
+    - SSSource: Solar system source measurements
+    - Visit: Visit metadata
+    """
 
     print(type(service))
     print(service)
@@ -713,8 +821,34 @@ def explore_rsp(service=None):
 
 
 def explore_vsa_wsa(service=None):
-    """
-
+    """Explore VSA/WSA near-infrared survey tables via TAP service.
+    
+    Queries and reports row counts for major near-infrared survey tables
+    in the VISTA Science Archive (VSA) or WFCAM Science Archive (WSA).
+    
+    Parameters
+    ----------
+    service : pyvo.dal.TAPService
+        TAP service object connected to VSA or WSA.
+    
+    Returns
+    -------
+    list of str
+        List of table names queried.
+    
+    Notes
+    -----
+    For VSA, queries tables from:
+    - VHSDR6 (VISTA Hemisphere Survey)
+    - VIDEODR5 (VISTA Deep Extragalactic Observations)
+    - VIKINGDR4 (VISTA Kilo-degree Infrared Galaxy survey)
+    
+    For WSA, queries tables from:
+    - UKIDSSDR11PLUS (UKIRT Infrared Deep Sky Survey)
+    - UHSDR2 (UKIRT Hemisphere Survey)
+    
+    Each table name ends with 'Source' and contains merged photometric
+    catalog data.
     """
     print(type(service))
     print(service)
@@ -760,9 +894,32 @@ def explore_vsa_wsa(service=None):
 
 
 def main():
-    """
-
-
+    """Main function to explore TAP services and query astronomical catalogs.
+    
+    Connects to a TAP service specified via command line arguments,
+    retrieves service metadata, and explores available tables and schemas.
+    Demonstrates various TAP/ADQL query capabilities.
+    
+    Parameters
+    ----------
+    None
+        Uses command line arguments parsed by parse_arguments().
+    
+    Returns
+    -------
+    None
+        Outputs query results and table information to stdout.
+    
+    Notes
+    -----
+    This function demonstrates:
+    - Connecting to different TAP services (LSST RSP, VSA, WSA, etc.)
+    - Querying TAP schema metadata
+    - Running spatial cone searches
+    - Exploring table schemas and column definitions
+    
+    Command line arguments control which service to connect to.
+    Use --help for available options.
     """
 
 

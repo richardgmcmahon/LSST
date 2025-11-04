@@ -56,6 +56,26 @@ def parse_arguments():
 
 
 def get_dp1_fieldnames():
+    """Retrieve LSST DP1 field names from configuration file.
+    
+    Reads field names for LSST Data Preview 1 (DP1) from the
+    lsst_dp1.cfg configuration file.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    list of str
+        List of DP1 field names (e.g., ['47Tuc', 'LELF', 'FRSG', 'ECDFS', 'EDFS']).
+    
+    Notes
+    -----
+    The field names correspond to specific sky regions observed
+    in the LSST DP1 dataset. The configuration file must exist
+    in the current working directory.
+    """
 
     logger.info('\n')
 
@@ -87,6 +107,29 @@ def get_dp1_fieldnames():
 
 
 def read_Milliquas_DP1():
+    """Read Milliquas quasar catalog matched to LSST DP1 fields.
+    
+    Loads the Milliquas quasar catalog that has been pre-matched to
+    LSST Data Preview 1 field regions.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    ra_MQ : astropy.table.Column
+        Right ascension in degrees (J2000).
+    dec_MQ : astropy.table.Column
+        Declination in degrees (J2000).
+    redshift_MQ : astropy.table.Column
+        Redshift values.
+    
+    Notes
+    -----
+    Reads from file 'DP1_Fields_Milliquas.fits' in the current directory.
+    The Milliquas catalog is a comprehensive compilation of QSOs and AGN.
+    """
 
     logger.info('\n')
 
@@ -103,6 +146,31 @@ def read_Milliquas_DP1():
 def xmatch_Milliquas(table_lsst=None,
                      table_MQ=None,
                      searchRadius=0.5):
+    """Cross-match LSST catalog with Milliquas quasar catalog.
+    
+    Performs spatial cross-matching between an LSST photometric catalog
+    and the Milliquas quasar compilation.
+    
+    Parameters
+    ----------
+    table_lsst : astropy.table.Table, optional
+        LSST source catalog with RA/Dec columns.
+    table_MQ : astropy.table.Table, optional
+        Milliquas catalog table with RA/Dec and redshift columns.
+    searchRadius : float, optional
+        Matching radius in arcseconds. Default is 0.5.
+    
+    Returns
+    -------
+    index_lsst : int
+        Index placeholder for LSST matches.
+    index_MQ : int
+        Index placeholder for Milliquas matches.
+    
+    Notes
+    -----
+    This is a placeholder function that needs full implementation.
+    """
     logger.info('\n')
 
     index_lsst = 1
@@ -113,8 +181,26 @@ def xmatch_Milliquas(table_lsst=None,
 
 
 def count_refband(table=None):
-    """
-
+    """Count objects by reference band in LSST catalog.
+    
+    Analyzes the distribution of objects across different reference
+    photometric bands in an LSST Object catalog.
+    
+    Parameters
+    ----------
+    table : astropy.table.Table
+        LSST Object catalog with 'refBand' column.
+    
+    Returns
+    -------
+    None
+        Prints band counts to stdout.
+    
+    Notes
+    -----
+    The reference band is the photometric band used for
+    multi-band forced photometry in the LSST pipeline.
+    Typically one of: u, g, r, i, z, y.
     """
     logger.info('')
 
@@ -214,6 +300,34 @@ def table_flag_clean(table=None,
                      bandlist=None,
                      band_flaglist=None,
                      flaglist=None):
+    """Filter LSST catalog by removing flagged sources.
+    
+    Removes sources with quality flags set in specified bands,
+    returning a cleaned catalog.
+    
+    Parameters
+    ----------
+    table : astropy.table.Table
+        LSST source catalog with flag columns.
+    bandlist : list of str, optional
+        List of photometric bands to check (e.g., ['u', 'g', 'r']).
+        Default is ['u', 'g', 'r', 'i', 'z', 'y'].
+    band_flaglist : list of str, optional
+        List of band-specific flag column suffixes to check
+        (e.g., ['extendedness_flag', 'blendedness_flag']).
+    flaglist : list of str, optional
+        List of non-band-specific flag columns to check.
+    
+    Returns
+    -------
+    astropy.table.Table
+        Filtered table with flagged sources removed (flag == 0 retained).
+    
+    Notes
+    -----
+    Flags are combined across all specified bands and flag types.
+    Only sources with flag value of 0 (good) are retained.
+    """
     logger.info('\n')
 
     if bandlist is None:
@@ -233,6 +347,34 @@ def table_flag_info(table=None,
                     bandlist=None,
                     band_flaglist=None,
                     flaglist=None):
+    """Report statistics on LSST catalog quality flags.
+    
+    Prints information about the number of sources passing
+    quality flag criteria in each photometric band.
+    
+    Parameters
+    ----------
+    table : astropy.table.Table
+        LSST source catalog with flag columns.
+    bandlist : list of str, optional
+        List of photometric bands to check (e.g., ['u', 'g', 'r']).
+        Default is ['u', 'g', 'r', 'i', 'z', 'y'].
+    band_flaglist : list of str, optional
+        List of band-specific flag column suffixes to report
+        (e.g., ['extendedness_flag', 'blendedness_flag']).
+    flaglist : list of str, optional
+        List of non-band-specific flag columns to report.
+    
+    Returns
+    -------
+    None
+        Prints flag statistics to stdout and log.
+    
+    Notes
+    -----
+    Reports counts of sources with flag == 0 (good quality)
+    for each combination of band and flag type.
+    """
 
     logger.info('\n')
 
@@ -1579,9 +1721,24 @@ def plot_cmd_ccd(table=None,
 
 
 def plot_image_quality():
-    """
-
-
+    """Plot image quality metrics for LSST observations.
+    
+    Placeholder function for generating plots of image quality
+    metrics such as PSF FWHM, sky background, limiting magnitude,
+    and airmass as a function of time or other parameters.
+    
+    Parameters
+    ----------
+    None
+    
+    Returns
+    -------
+    None
+    
+    Notes
+    -----
+    This function needs to be implemented with actual plotting
+    functionality for LSST image quality metrics.
     """
 
     return
