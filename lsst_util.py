@@ -17,7 +17,9 @@ from astropy.coordinates import SkyCoord
 import astropy.units as u
 from astropy.table import Table, join_skycoord, join
 
-global DEBUG
+from pgiden import *
+help(pgiden)
+help(pgstamp)
 
 import TempleModels as tm
 #from TempleModels import * as tm
@@ -25,13 +27,37 @@ import TempleModels as tm
 
 # help(TempleModels.plot_ugr)
 
+# https://github.com/lsst/utils/tree/main/python/lsst/utils/plotting
+# https://github.com/lsst/utils/blob/main/python/lsst/utils/plotting/figures.py
+import lsst.utils.plotting
 from lsst.utils.plotting import (get_multiband_plot_colors,
                                  get_multiband_plot_symbols,
                                  get_multiband_plot_linestyles)
 
+global DEBUG
+global VERBOSE
+
 filter_colors = get_multiband_plot_colors()
 filter_symbols = get_multiband_plot_symbols()
 filter_linestyles = get_multiband_plot_linestyles()
+
+
+print(type(filter_colors))
+print(filter_colors)
+for key, value in filter_colors.items():
+    print(key, value)
+print()
+
+print(type(filter_linestyles))
+print(filter_linestyles)
+for key, value in filter_linestyles.items():
+    print(key, value)
+print()
+
+
+
+# help(lsst.utils.plotting)
+input('Enter any key to continue... ')
 
 dp1_FieldRadius = 1.0 # degree
 
@@ -56,6 +82,10 @@ def parse_arguments():
 
 
 def get_dp1_fieldnames():
+    """
+    see https://github.com/lsst/rtn-095/tree/main/notebooks
+
+    """
 
     logger.info('\n')
 
@@ -80,7 +110,28 @@ def get_dp1_fieldnames():
     # Output: ['apple', 'banana', 'cherry', 'date']
     """
 
+    # Fields and tracts dictionary  -- update to extract from data
+
+    field_codes = ["47Tuc",
+                   "ECDFS",
+                   "EDFS",
+                   "Fornax_dSph",
+                   "RubinSV_95_-25",
+                   "RubinSV_38_7",
+                   "Seagull"]
+
+    fields_tracts = {
+        "47Tuc": [453, 454],
+        "Fornax_dSph": ["4016", "4017", "4217", "4218"],
+        "ECDFS": ["4848", "4849", "5063", "5064"],
+        "EDFS": ["2234", "2393", "2394"],
+        "RubinSV_95_-25": ["5305", "5306", "5625", "5626"],
+        "Seagull": ["7610", "7611", "7849", "7850"],
+        "RubinSV_38_7": ["10463", "10464", "10704", "10705"]}
+
+
     # fieldnames = ['47Tuc', 'LELF', 'FRSG', 'ECDFS', 'EDFS', 'LGLF', 'SeaNeb']
+    fieldcode = ['47_Tuc', 'ECDFS', 'EDFS', 'Fornax_dSph, '', 'Seagull']
 
 
     return fieldnames
@@ -1247,10 +1298,19 @@ def plot_color_color(
 def plot_magnitude_distribution(table=None,
                                 bands=None,
                                 magbins=None,
+                                refExtendedness=False,
+                                histtype='step',
+                                cumulative=False,
                                 suptitle=None,
+                                suptitle_prefix=None,
                                 grid=False,
-                                extended_magtype=None):
+                                extended_magtype=None,
+                                plotfile_prefix=None,
+                                plotfile_suffix=None,
+                                plotfile_counter_offset=0):
     """
+
+
     From Tutorial
 
     301.4. Extended Chandra Deep Field South (ECDFS)
@@ -1260,32 +1320,130 @@ def plot_magnitude_distribution(table=None,
     Plot histograms of object magnitudes, separating the samples into stars
     and galaxies.
 
-    Use the refExtendedness flag to distinguish them: treat objects with
+    https://sdm-schemas.lsst.io/dp1.html
+
+    Use the refExtendedness flag to distinguish them: galaxies and point sources
     refExtendedness == 1 as likely galaxies (extended) and those with
     refExtendedness == 0 as likely stars (point sources).
+
+    Per waveband
+
 
     Use cModelMag mags for galaxies and psfMag for stars.
 
     """
     logger.info('\n')
 
+    plotfile_counter = plotfile_counter_offset
+
+    if suptitle is None:
+        suptitle = ''
+
+    if suptitle_prefix is None:
+        suptitle_prefix = ''
+
+
+    if refExtendedness:
+        suptitle = suptitle + '\n refExtendedness'
+
+    if not refExtendedness:
+        suptitle = suptitle + '\n band_extendedness'
+
+    # objtab is used by RSP tutorial
     objtab = table
 
     field_filters = ['u', 'g', 'r', 'i', 'z', 'y']
 
-    ptsource = (objtab['refExtendedness'] == 0)
+    linestyle_point = 'solid'
+    linestyle_extended = 'dotted'
+    linestyle_all = 'dashdot'
 
-    mag_bins = np.arange(16.0, 28.0, 0.2)
+    color_point = 'blue'
+    color_extended = 'red'
+    color_all = 'black'
 
+    # loop through the band_extendedness
+
+    is_masked = np.ma.is_masked(objtab['refExtendedness'])
+    if is_masked:
+        column = objtab['refExtendedness']
+        column.info()
+        masked  = column.mask
+        unmasked = ~column.mask
+
+        masked_column = column[masked]
+        unmasked_column = column[unmasked]
+
+        print()
+        logger.info(f'\nUnmasked data')
+        unmasked_column.info()
+        ptsource = (unmasked_column == 0)
+        extsource = (unmasked_column == 1)
+
+        print(f'Point sources: {len(unmasked_column[ptsource])}')
+        print(f'Not a point source: {len(unmasked_column[~ptsource])}')
+        print()
+
+        print()
+        logger.info(f'\nMasked data')
+        masked_column.info()
+        ptsource = (masked_column == 0)
+        extsource = (masked_column == 1)
+
+        print(f'Point sources: {len(masked_column[ptsource])}')
+        print(f'Not a point source: {len(masked_column[~ptsource])}')
+        print()
+
+        logger.info('\n')
+
+        input('Enter any key to continue... ')
+
+
+    if refExtendedness:
+        ptsource = (objtab['refExtendedness'] == 0)
+        extsource = (objtab['refExtendedness'] == 1)
+
+
+
+        if is_masked:
+            masked_source = column[masked]
+            unmasked_source = column[unmasked]
+
+        n_all = len(objtab)
+        n_unmasked = len(unmasked_source)
+        n_masked = len(masked_source)
+
+        logger.info('\n')
+        print(f'All sources: {n_all}')
+
+        print(f'Unmasked sources: {n_unmasked}')
+        print(f'Masked sources: {n_masked}')
+
+        print(f'Point sources: {len(objtab[ptsource])}')
+        print(f'Extended sources: {len(objtab[~ptsource])}')
+
+        suptitle = suptitle + ': ' + str(n_all)
+
+        input('Enter any key to continue... ')
+
+    mag_bins = np.arange(17.0, 27.0, 0.2)
+
+    # subplots
     nrows, ncols = 2, 3
     fig, ax = plt.subplots(
         nrows, ncols, figsize=(12, 8),
         sharey=True)
+
+    # flatten so can loop through as a linear series
+    # https://numpy.org/doc/stable/reference/generated/numpy.ndarray.flatten.html   # Return a copy of the array collapsed into one dimension
     ax = ax.flatten()
     plt.subplots_adjust(hspace=0, wspace=0)
 
-    print()
+    # loop throgh the wavebands
     for iband, band in enumerate(field_filters):
+        if not refExtendedness:
+            ptsource = (objtab[band + '_extendedness'] == 0)
+
         mag_psf = objtab[f"{band}_psfMag"]
         mag_cmodel = objtab[f"{band}_cModelMag"]
 
@@ -1293,23 +1451,55 @@ def plot_magnitude_distribution(table=None,
                       (15 < mag_cmodel) & (mag_cmodel < 30))
 
         print(f"Number of objects in {band}-band: {np.sum(valid_mags)}")
+
         if np.sum(valid_mags) > 0:
             row = iband // ncols
             col = iband % ncols
-            xdata = mag_psf[valid_mags & ptsource]
-            label = band + ':' + str(len(xdata))
+
+            # plot all objects
+            xdata = mag_psf[valid_mags]
+            label = band + ':' + str(len(xdata)) + ' All'
             print(f'iband: {iband}')
             n_psf, bins_psf, patches_psf = \
                 ax[iband].hist(xdata,
-                         bins=mag_bins,
-                         histtype='step', linewidth=1,
-                         color=filter_colors[band], label=label)
+                               bins=mag_bins,
+                               histtype='step',
+                               cumulative=cumulative,
+                               linewidth=1,
+                               color=filter_colors[band],
+                               label=label)
             for patch in patches_psf:
-                patch.set_linestyle(filter_linestyles[band])
+                patch.set_linestyle(linestyle_all)
 
             ax[iband].set_xlim(mag_bins.min(), mag_bins.max())
             ax[iband].set_yscale('log')
-            ax[iband].set_xlabel('Magnitude')
+            ax[iband].set_xlabel('AB Magnitude')
+            if col == 0:
+                ax[iband].set_ylabel('Number of objects')
+            # ax[iband].set_title('Point sources (PSF mags)')
+
+            ax[iband].minorticks_on()
+            if grid:
+                ax[iband].grid()
+
+
+            xdata = mag_psf[valid_mags & ptsource]
+            label = band + ':' + str(len(xdata)) + ' 0'
+            print(f'iband: {iband}')
+            n_psf, bins_psf, patches_psf = \
+                ax[iband].hist(xdata,
+                               bins=mag_bins,
+                               histtype='step',
+                               cumulative=cumulative,
+                               linewidth=1,
+                               color=filter_colors[band],
+                               label=label)
+            for patch in patches_psf:
+                patch.set_linestyle(linestyle_point)
+
+            ax[iband].set_xlim(mag_bins.min(), mag_bins.max())
+            ax[iband].set_yscale('log')
+            ax[iband].set_xlabel('AB Magnitude ' + band)
             if col == 0:
                 ax[iband].set_ylabel('Number of objects')
             # ax[iband].set_title('Point sources (PSF mags)')
@@ -1319,23 +1509,26 @@ def plot_magnitude_distribution(table=None,
                 ax[iband].grid()
 
             xdata = mag_cmodel[valid_mags & ~ptsource]
-            label = band + ':' + str(len(xdata))
+            label = band + ':' + str(len(xdata)) + ' 1'
             n_cmodel, bins_cmodel, patches_cmodel = \
                 ax[iband].hist(xdata,
                          bins=mag_bins,
                          histtype='step',
-                         linewidth=2,
+                         cumulative=cumulative,
+                         linewidth=1,
                          color=filter_colors[band],
                          label=label,)
             for patch in patches_cmodel:
-                patch.set_linestyle(filter_linestyles[band])
+                patch.set_linestyle(linestyle_extended)
 
+            # now plot the extended objects
             xdata = mag_psf[valid_mags & ~ptsource]
             label = band + ':' + str(len(xdata))
             n_cmodel, bins_cmodel, patches_cmodel = \
                 ax[iband].hist(xdata,
                                bins=mag_bins,
                                histtype='step',
+                               cumulative=cumulative,
                                linewidth=1,
                                color=filter_colors[band],
                                label=label,)
@@ -1348,9 +1541,26 @@ def plot_magnitude_distribution(table=None,
         plt.suptitle(suptitle)
 
     logger.info('\n')
+    pgiden()
+    pgstamp()
+
+    plotfile_counter += 1
+    plotfile = (f"{table.meta['filename']}" +
+                f"_magnitude_distribution_" +
+                f"{plotfile_counter}.png")
+    if cumulative:
+        plotfile = (f"{table.meta['filename']}" +
+                f"_magnitude_distribution_cumulative_" +
+                f"{plotfile_counter}.png")
+
+
+    print('Saving:', plotfile)
+    plt.savefig(plotfile)
+
     plt.show()
 
-    return
+
+    # return
 
     print()
     if extended_magtype != 'psf':
@@ -1379,10 +1589,12 @@ def plot_magnitude_distribution(table=None,
             n_psf, bins_psf, patches_psf = \
                 ax1.hist(xdata,
                          bins=mag_bins,
-                         histtype='step', linewidth=2,
+                         histtype='step',
+                         cumulative=cumulative,
+                         linewidth=2,
                          color=filter_colors[band], label=label)
             for patch in patches_psf:
-                patch.set_linestyle(filter_linestyles[band])
+                patch.set_linestyle(linestyle_point)
 
             xdata = mag_cmodel[valid_mags & ~ptsource]
             label = band + ':' + str(len(xdata))
@@ -1390,11 +1602,12 @@ def plot_magnitude_distribution(table=None,
                 ax2.hist(xdata,
                          bins=mag_bins,
                          histtype='step',
+                         cumulative=cumulative,
                          linewidth=2,
                          color=filter_colors[band],
                          label=label,)
             for patch in patches_cmodel:
-                patch.set_linestyle(filter_linestyles[band])
+                patch.set_linestyle(linestyle_extended)
 
 
             if extended_magtype == 'psf':
@@ -1404,15 +1617,16 @@ def plot_magnitude_distribution(table=None,
                     ax3.hist(xdata,
                              bins=mag_bins,
                              histtype='step',
+                             cumulative=cumulative,
                              linewidth=2,
                              color=filter_colors[band],
                              label=label,)
                 for patch in patches_cmodel:
-                    patch.set_linestyle(filter_linestyles[band])
+                    patch.set_linestyle(linestyle_extended)
 
     ax1.set_xlim(mag_bins.min(), mag_bins.max())
     ax1.set_yscale('log')
-    ax1.set_xlabel('Magnitude (psf)')
+    ax1.set_xlabel('AB Magnitude (psf)')
     ax1.set_ylabel('Number of objects')
     ax1.set_title('Point sources (PSF mags)')
     ax1.legend(loc='upper left', ncols=1)
@@ -1422,7 +1636,7 @@ def plot_magnitude_distribution(table=None,
 
 
     ax2.set_xlim(mag_bins.min(), mag_bins.max())
-    ax2.set_xlabel('Magnitude (cModel)')
+    ax2.set_xlabel('AB Magnitude (cModel)')
     ax2.set_title('Extended sources (cModel mags)')
     ax2.legend(loc='upper left', ncols=1)
     ax2.minorticks_on()
@@ -1443,6 +1657,21 @@ def plot_magnitude_distribution(table=None,
         plt.suptitle(suptitle)
 
     logger.info('\n')
+    pgiden()
+    pgstamp()
+
+    plotfile_counter += 1
+    plotfile = (f"{table.meta['filename']}" +
+                f"_magnitude_distribution_" +
+                f"{plotfile_counter}.png")
+    if cumulative:
+        plotfile = (f"{table.meta['filename']}" +
+                f"_magnitude_distribution_cumulative_" +
+                f"{plotfile_counter}.png")
+
+    print('Saving:', plotfile)
+    plt.savefig(plotfile)
+
     plt.show()
 
     return
@@ -1595,7 +1824,7 @@ def explore_column(data=None,
     Explore and print statistics about a column of data, either directly
     as an array or as a column in a table.
 
-    TODO: add support for Pandas Dataframe
+    TODO: add support for Pandas Dataframe;
 
     Parameters
     ----------
@@ -1628,23 +1857,24 @@ def explore_column(data=None,
 
 
     """
+    logger = logging
+    logger.info('\n')
 
     if data is not None:
         print(type(data))
+        print(f'Number of rows: {len(data)}')
 
     if table is not None:
         print(type(table))
+        print(f'Number of rows: {len(table)}')
 
     if colname is not None:
         print(f'type(colname) {colname}')
 
-
-    logger = logging
-    logger.info('\n')
-
     if table is not None:
         table[colname].info(['attributes', 'stats'])
         data = table[colname]
+        data = np.asarray(data).copy()
         print(f'colname: {colname}')
         logger.info(f'colname: {colname}')
 

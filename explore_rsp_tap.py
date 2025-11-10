@@ -60,9 +60,10 @@ import numpy as np
 
 import pyvo
 
+print(f'pyvo.__version__: {pyvo.__version__}')
+
 from astropy.table import Table
 import astropy.units as u
-
 
 
 class SimpleLogger:
@@ -702,7 +703,7 @@ def explore_rsp(service=None):
 
 
     for itable, table_name in enumerate(table_names):
-        print(f'itable: {table_name}')
+        print(f'table_name: {table_name}')
         query = f'SELECT COUNT(*) FROM {table_name} '
 
         result = run_Query(service=service, query=query)
@@ -712,7 +713,7 @@ def explore_rsp(service=None):
     return
 
 
-def explore_vsa_wsa(service=None):
+def explore_vsa_wsa(service=None, count=True):
     """
 
     """
@@ -724,8 +725,10 @@ def explore_vsa_wsa(service=None):
 
     if 'vsa' in service.baseurl.lower():
         table_names = ['VHSDR6.vhsSource',
+                       'VHSDR7.vhsSource',
                        'VIDEODR5.videoSource',
-                       'VIKINGDR4.vikingSource']
+                       'VIKINGDR4.vikingSource',
+                       'VIKINGDR5.vikingSource']
                        #'VMCDR5.vmcSource']
                        #'VVVDR4.vvvSource']
 
@@ -735,12 +738,13 @@ def explore_vsa_wsa(service=None):
                        'UKIDSSDR11PLUS.gcsSource',
                        'UKIDSSDR11PLUS.gpsSource',
                        'UKIDSSDR11PLUS.udsSource',
-                       'UHSDR2.uhsSource']
+                       'UHSDR2.uhsSource',
+                       'UHSDR3.uhsSource']
 
     for itable, table_name in enumerate(table_names):
-        print(f'itable: {table_name}')
+        print(f'table_name: {table_name}')
         if count:
-            query = f'SELECT COUNT(*) FROM {table_name})'
+            query = f'SELECT COUNT(*) FROM {table_name}'
 
         if not count:
             query = make_query_region(

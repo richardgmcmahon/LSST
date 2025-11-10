@@ -1151,7 +1151,7 @@ def explore_objtab():
 def select_highredshift_quasars(mode='sync',
                                 top=None,
                                 allfields=False,
-                                tract=4849,
+                                tract=None,
                                 patchs=None,
                                 patch=None,
                                 allcolumns=True,
@@ -1170,6 +1170,8 @@ def select_highredshift_quasars(mode='sync',
     logger.info('')
     logging.info('')
     logger.info(f'Fieldname: {fieldname} top {top}')
+    logger.info(f'Tract: {tract}')
+    logger.info(f'Patch: {patch}')
 
 
     all = True
@@ -1288,6 +1290,24 @@ def select_highredshift_quasars(mode='sync',
     result.info(['attributes'])
     # result.info(['attributes', 'stats'])
 
+    if tract is not None and patch is not None:
+        result.meta['tract'] = tract
+        result.meta['patch'] = patch
+    if tract is not None and patch is None:
+        result.meta['tract'] = tract
+
+
+    import textwrap
+    from datetime import datetime
+    max_length = 70
+    # Format the SQL query into lines
+    query_lines = textwrap.wrap(query,
+                                width=max_length,
+                                break_long_words=False)
+
+    result.meta['history'] = [
+    f"Query executed: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')} UTC"
+    ] + query_lines
 
     outfile = 'DP1_' + fieldname + '_Object_tmp.fits'
     if thintable:
@@ -1521,19 +1541,48 @@ def mk_logger(prefix=None):
     return logger
 
 
+def parse_arguments():
+    """Parse command line arguments."""
+
+    parser = argparse.ArgumentParser(description='Run a SQL query against the LSST RSP TAP service')
+
+    parser.add_argument('-t', '--tract',
+                       default=None,
+                       help='Choose a Tract (default: None)')
+
+    parser.add_argument('-p', '--patch',
+                       default=None,
+                       help='Choose a Patch (default: None); Note; you also need a Tract for a Patch level query')
+
+    return parser.parse_args()
+
+
+
 if __name__ == "__main__":
+
+    username = getpass.getuser()
+    logger = mk_logger()
+
+    t0 = time.time()
+    # Parse command line arguments
+    logger.info('Parse command line arguments')
+    args = parse_arguments()
+    print(f'args: {args}')
+
+    tract = args.tract
+    logger.info(f'Tract: {tract}')
+    patch = args.patch
+    logger.info(f'Patch: {patch}')
 
     config = configparser.ConfigParser()
 
     timestamp = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime())
     filename_timestamp = time.strftime('%Y%m%dT%H%M', time.gmtime())
 
-    username = getpass.getuser()
     print('__name__:', __name__)
 
-
     #from mk_logger import *
-    logger = mk_logger()
+
 
     t0 = time.time()
 
@@ -1543,7 +1592,7 @@ if __name__ == "__main__":
     fieldnames = ['47Tuc', 'ECDFS', 'EDFS', 'LELF', 'FDSG']
 
     fieldname = 'All'
-    fieldname = fieldnames[1]
+    fieldname = fieldnames[0]
     sectionName = fieldname
 
     get_summary_info = False
@@ -1557,7 +1606,6 @@ if __name__ == "__main__":
     dec_centre = -28.1
 
     if fieldname !="All":
-
         field_ra_centre = config.get(sectionName, 'ra_centre')
         logger.info(f'Field RA centre {field_ra_centre}')
 
@@ -1583,8 +1631,6 @@ if __name__ == "__main__":
     rsp_tap = connect_rsp_tap()
     print('Elapsed time(secs): ',time.time() - t0, '\n')
 
-
-
     if get_summary_info:
 
         t0 = time.time()
@@ -1607,16 +1653,22 @@ if __name__ == "__main__":
         print('Elapsed time(secs): ',time.time() - t0, '\n')
         input('Enter any key to continue... ')
 
-
     # results= rsp_tap.run_sync(query)
     # query_ObsCore()
     # sys.exit()
 
 
-
     # select_highredshift_quasars(mode='async', top=10000)
     # query_object(mode='async', top=None)
-    select_highredshift_quasars(mode='async', top=ntop)
+    print(f'top: {ntop}')
+    if tract is not None:
+            print(f'Tract: {tract}')
+    if patch is not None and tract is not None:
+            print(f'Patch: {patch}')
+    select_highredshift_quasars(mode='async',
+                                top=ntop,
+                                tract=tract,
+                                patch=patch)
 
     # sys.exit()
 
