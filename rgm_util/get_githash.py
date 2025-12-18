@@ -25,15 +25,15 @@ def get_githash(short_hash=True):
     try:
         if short_hash:
             result = subprocess.run(['git', 'rev-parse', '--short', 'HEAD'],
-                                  capture_output=True, text=True, check=True)
+                                  capture_output=True, text=True, check=True, timeout=5)
         else:
             result = subprocess.run(['git', 'rev-parse', 'HEAD'],
-                                  capture_output=True, text=True, check=True)
+                                  capture_output=True, text=True, check=True, timeout=5)
         
         git_hash = result.stdout.strip()
         logger.debug(f"Git hash: {git_hash}")
         return git_hash
         
-    except (subprocess.CalledProcessError, FileNotFoundError):
+    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
         logger.warning("Could not determine git hash")
         return 'unknown'

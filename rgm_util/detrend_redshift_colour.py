@@ -4,7 +4,6 @@ Module for detrending redshift-colour relationships.
 
 import logging
 
-# Import the function directly instead of the module - THIS IS THE FIX!
 from .get_footnote import get_footnote
 
 logger = logging.getLogger(__name__)
@@ -108,10 +107,6 @@ def detrend_redshift_colour(table=None,
     if verbose:
         logger.info(f"Added column '{detrended_col_name}' to table")
     
-    # FIXED: Call the get_footnote FUNCTION, not the module
-    # This is the line that was causing the error (line 171 in original)
-    # OLD (BUGGY): import get_footnote; get_footnote()
-    # NEW (FIXED): from .get_footnote import get_footnote; get_footnote()
     footnote_text = get_footnote()
     if verbose:
         logger.debug(f"Generated footnote: {footnote_text}")

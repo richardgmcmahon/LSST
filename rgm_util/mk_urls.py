@@ -51,7 +51,7 @@ def mk_sdss_url(ra, dec, scale=0.4):
     str
         URL to SDSS Navigate Tool
     """
-    url = f"http://skyserver.sdss.org/dr16/en/tools/chart/navi.aspx?ra={ra}&dec={dec}&scale={scale}"
+    url = f"https://skyserver.sdss.org/dr16/en/tools/chart/navi.aspx?ra={ra}&dec={dec}&scale={scale}"
     return url
 
 
