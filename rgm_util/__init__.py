@@ -17,6 +17,7 @@ __all__ = [
     'write_radec_csvfile',
     'get_githash',
     'plot_radec',
+    'create_test_table',
 ]
 
 
@@ -46,4 +47,7 @@ def __getattr__(name):
     elif name == 'plot_radec':
         from .plot_radec import plot_radec
         return plot_radec
+    elif name == 'create_test_table':
+        from .create_test_table import create_test_table
+        return create_test_table
     raise AttributeError(f"module '{__name__}' has no attribute '{name}'")
